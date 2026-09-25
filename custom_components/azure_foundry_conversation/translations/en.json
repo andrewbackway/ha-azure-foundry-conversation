@@ -9,7 +9,7 @@
           "api_key": "API key"
         },
         "data_description": {
-          "endpoint": "Base resource URL, e.g. https://your-resource.services.ai.azure.com/",
+          "endpoint": "Base resource URL for your Azure AI Foundry resource",
           "api_key": "A key from the resource's Keys and Endpoint page"
         }
       },
@@ -29,7 +29,7 @@
           "api_key": "API key"
         },
         "data_description": {
-          "endpoint": "Base resource URL, e.g. https://your-resource.services.ai.azure.com/",
+          "endpoint": "Base resource URL for your Azure AI Foundry resource",
           "api_key": "A key from the resource's Keys and Endpoint page"
         }
       }
