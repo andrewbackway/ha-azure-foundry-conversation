@@ -1,2 +1,5 @@
 pytest-homeassistant-custom-component
+hassil==3.5.0
+home-assistant-intents==2026.1.28
+mutagen==1.47.0
 openai==2.45.0
