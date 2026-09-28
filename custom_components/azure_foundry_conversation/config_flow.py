@@ -177,6 +177,9 @@ class AzureFoundryConfigFlow(ConfigFlow, domain=DOMAIN):
                 STEP_USER_DATA_SCHEMA, user_input or {}
             ),
             errors=errors,
+            description_placeholders={
+                "endpoint_example": "https://your-resource.services.ai.azure.com/"
+            },
         )
 
     async def async_step_reconfigure(
@@ -214,6 +217,9 @@ class AzureFoundryConfigFlow(ConfigFlow, domain=DOMAIN):
                 STEP_USER_DATA_SCHEMA, user_input or dict(reconfigure_entry.data)
             ),
             errors=errors,
+            description_placeholders={
+                "endpoint_example": "https://your-resource.services.ai.azure.com/"
+            },
         )
 
     async def async_step_reauth(
