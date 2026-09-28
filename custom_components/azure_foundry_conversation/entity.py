@@ -74,9 +74,7 @@ def _strip_unsupported(obj: Any) -> Any:
         properties = cleaned.get("properties")
         required = cleaned.get("required")
         if isinstance(properties, dict) and isinstance(required, list):
-            cleaned["required"] = [
-                name for name in required if name in properties
-            ]
+            cleaned["required"] = [name for name in required if name in properties]
         return cleaned
     if isinstance(obj, list):
         return [_strip_unsupported(item) for item in obj if not _is_unsupported(item)]

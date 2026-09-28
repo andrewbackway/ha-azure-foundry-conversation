@@ -538,9 +538,7 @@ class TTSSubentryFlowHandler(ConfigSubentryFlow):
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Optional(
-                    CONF_TTS_STREAMING, default=DEFAULT_TTS_STREAMING
-                ): bool,
+                vol.Optional(CONF_TTS_STREAMING, default=DEFAULT_TTS_STREAMING): bool,
                 vol.Optional(CONF_TTS_RATE): str,
                 vol.Optional(CONF_TTS_PITCH): str,
                 vol.Optional(CONF_TTS_VOLUME): str,

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import struct
 from collections.abc import AsyncGenerator, Callable
+import struct
 from typing import Any
 from xml.sax.saxutils import escape, quoteattr
 
@@ -75,7 +75,6 @@ def _silence(sample_rate: int, milliseconds: int, *, bits: int = 16) -> bytes:
     return b"\x00" * (sample_rate * milliseconds // 1000 * (bits // 8))
 
 
-
 def _wav_header(sample_rate: int, *, bits: int = 16, channels: int = 1) -> bytes:
     """Build a streaming WAV header for 16-bit mono PCM of unknown length."""
     byte_rate = sample_rate * channels * bits // 8
@@ -102,7 +101,6 @@ def _wav_header(sample_rate: int, *, bits: int = 16, channels: int = 1) -> bytes
             struct.pack("<I", streaming_size),
         )
     )
-
 
 
 def _find_boundary(buffer: str) -> int | None:
@@ -259,9 +257,7 @@ class AzureFoundryTTSEntity(tts.TextToSpeechEntity, AzureFoundrySpeechEntity):
         self, message: str, language: str, options: dict[str, Any]
     ) -> tts.TtsAudioType:
         """Synthesize speech via the Azure Speech REST API (single request)."""
-        build_ssml, headers, url, extension = self._resolve_request(
-            language, options
-        )
+        build_ssml, headers, url, extension = self._resolve_request(language, options)
         client = get_async_client(self.hass)
         try:
             response = await client.post(
@@ -359,9 +355,7 @@ class AzureFoundryTTSEntity(tts.TextToSpeechEntity, AzureFoundrySpeechEntity):
         extension, _content_type = TTS_OUTPUT_FORMATS.get(
             resolved_format, ("mp3", "audio/mpeg")
         )
-        resolved_language = (
-            language or data.get(CONF_TTS_LANGUAGE) or _DEFAULT_LANGUAGE
-        )
+        resolved_language = language or data.get(CONF_TTS_LANGUAGE) or _DEFAULT_LANGUAGE
 
         def build_ssml(text: str) -> str:
             return _build_ssml(
@@ -410,4 +404,3 @@ class AzureFoundryTTSEntity(tts.TextToSpeechEntity, AzureFoundrySpeechEntity):
         except httpx.HTTPError as err:
             LOGGER.error("Azure Speech TTS connection error: %s", err)
             raise HomeAssistantError("Azure Speech TTS request failed") from err
-
