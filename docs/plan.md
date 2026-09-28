@@ -182,12 +182,11 @@ sample does exactly this:
 # __init__.py (sample, trimmed)
 PLATFORMS = (Platform.AI_TASK, Platform.CONVERSATION, Platform.STT, Platform.TTS)
 
+
 async def async_setup_entry(hass, entry) -> bool:
     client = create_client(hass, entry.data[CONF_API_KEY], entry.data[CONF_ENDPOINT])
     try:
-        await hass.async_add_executor_job(
-            client.with_options(timeout=10.0).models.list
-        )
+        await hass.async_add_executor_job(client.with_options(timeout=10.0).models.list)
     except openai.AuthenticationError as err:
         raise ConfigEntryAuthFailed(err) from err
     except openai.OpenAIError as err:
@@ -210,12 +209,32 @@ options. The sample seeds four subentries at creation time:
 # config_flow.py (sample, trimmed) — subentries created with the entry
 return self.async_create_entry(
     title="Azure OpenAI",
-    data=user_input,          # endpoint + api key (the connection)
+    data=user_input,  # endpoint + api key (the connection)
     subentries=[
-        {"subentry_type": "conversation",  "data": RECOMMENDED_CONVERSATION_OPTIONS, "title": DEFAULT_CONVERSATION_NAME, "unique_id": None},
-        {"subentry_type": "ai_task_data",  "data": RECOMMENDED_AI_TASK_OPTIONS,      "title": DEFAULT_AI_TASK_NAME,      "unique_id": None},
-        {"subentry_type": "stt",           "data": RECOMMENDED_STT_OPTIONS,          "title": DEFAULT_STT_NAME,          "unique_id": None},
-        {"subentry_type": "tts",           "data": RECOMMENDED_TTS_OPTIONS,          "title": DEFAULT_TTS_NAME,          "unique_id": None},
+        {
+            "subentry_type": "conversation",
+            "data": RECOMMENDED_CONVERSATION_OPTIONS,
+            "title": DEFAULT_CONVERSATION_NAME,
+            "unique_id": None,
+        },
+        {
+            "subentry_type": "ai_task_data",
+            "data": RECOMMENDED_AI_TASK_OPTIONS,
+            "title": DEFAULT_AI_TASK_NAME,
+            "unique_id": None,
+        },
+        {
+            "subentry_type": "stt",
+            "data": RECOMMENDED_STT_OPTIONS,
+            "title": DEFAULT_STT_NAME,
+            "unique_id": None,
+        },
+        {
+            "subentry_type": "tts",
+            "data": RECOMMENDED_TTS_OPTIONS,
+            "title": DEFAULT_TTS_NAME,
+            "unique_id": None,
+        },
     ],
 )
 ```
@@ -238,8 +257,8 @@ def async_get_supported_subentry_types(cls, config_entry):
     return {
         "conversation": AzureFoundrySubentryFlowHandler,
         "ai_task_data": AzureFoundrySubentryFlowHandler,
-        "stt":          AzureFoundrySttSubentryFlowHandler,
-        "tts":          AzureFoundryTtsSubentryFlowHandler,
+        "stt": AzureFoundrySttSubentryFlowHandler,
+        "tts": AzureFoundryTtsSubentryFlowHandler,
     }
 ```
 
@@ -281,7 +300,9 @@ class AzureFoundryConversationEntity(
     def __init__(self, entry, subentry):
         super().__init__(entry, subentry)
         if self.subentry.data.get(CONF_LLM_HASS_API):
-            self._attr_supported_features = conversation.ConversationEntityFeature.CONTROL
+            self._attr_supported_features = (
+                conversation.ConversationEntityFeature.CONTROL
+            )
 
     async def async_added_to_hass(self):
         await super().async_added_to_hass()
@@ -306,11 +327,11 @@ message handler simply asks HA to provide that context:
 # conversation.py (sample) _async_handle_message
 await chat_log.async_provide_llm_data(
     user_input.as_llm_context(DOMAIN),
-    options.get(CONF_LLM_HASS_API),   # e.g. [llm.LLM_API_ASSIST]
+    options.get(CONF_LLM_HASS_API),  # e.g. [llm.LLM_API_ASSIST]
     options.get(CONF_PROMPT),
     user_input.extra_system_prompt,
 )
-await self._async_handle_chat_log(chat_log)   # runs the model + tool-call loop
+await self._async_handle_chat_log(chat_log)  # runs the model + tool-call loop
 return conversation.async_get_result_from_chat_log(user_input, chat_log)
 ```
 
@@ -469,7 +490,7 @@ calls used by STT/TTS.
   RECOMMENDED_CONVERSATION_OPTIONS = {
       CONF_RECOMMENDED: True,
       CONF_LLM_HASS_API: [llm.LLM_API_ASSIST],
-      CONF_PROMPT: llm.DEFAULT_INSTRUCTIONS_PROMPT,   # editable in the UI
+      CONF_PROMPT: llm.DEFAULT_INSTRUCTIONS_PROMPT,  # editable in the UI
   }
   ```
   ```python

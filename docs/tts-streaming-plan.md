@@ -46,12 +46,16 @@ class TTSAudioRequest:
     options: dict[str, Any]
     message_gen: AsyncGenerator[str]
 
+
 @dataclass
 class TTSAudioResponse:
     extension: str
     data_gen: AsyncGenerator[bytes]
 
-async def async_stream_tts_audio(self, request: TTSAudioRequest) -> TTSAudioResponse: ...
+
+async def async_stream_tts_audio(
+    self, request: TTSAudioRequest
+) -> TTSAudioResponse: ...
 ```
 
 Key facts:
@@ -81,8 +85,11 @@ async def async_stream_tts_audio(self, request):
     async def data_gen():
         client = get_async_client(self.hass)
         async with client.stream(
-            "POST", url, headers=headers,
-            content=ssml.encode("utf-8"), timeout=30.0,
+            "POST",
+            url,
+            headers=headers,
+            content=ssml.encode("utf-8"),
+            timeout=30.0,
         ) as response:
             if response.status_code != 200:
                 await response.aread()

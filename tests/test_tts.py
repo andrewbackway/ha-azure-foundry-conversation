@@ -54,7 +54,6 @@ class _FakeStream:
         return self._body
 
 
-
 async def test_tts_synthesizes_audio(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
@@ -263,4 +262,3 @@ async def test_sentence_chunks(parts: list[str], expected: list[str]) -> None:
     """The sentence chunker splits on boundaries and flushes the remainder."""
     result = [chunk async for chunk in _sentence_chunks(_agen(parts))]
     assert result == expected
-
