@@ -1,1 +1,2 @@
 pytest-homeassistant-custom-component
+openai==2.45.0
