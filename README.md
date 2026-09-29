@@ -38,7 +38,7 @@ classic Chat Completions API rejects tools + reasoning for these models — see
 
 ## Set up in Azure AI Foundry
 
-1. Open your Foundry resource and copy the **endpoint**
+1. Open your Foundry resource (or creae one at `https://ai.azure.com`) and copy the **endpoint**
    (`https://<your-resource>.services.ai.azure.com/`) and a **key** from
    *Keys and Endpoint*.
 2. **Deploy** the chat model and note the **deployment name** — this is the
