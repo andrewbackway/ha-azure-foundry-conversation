@@ -40,7 +40,7 @@ Confirmed decisions (from requirements interview):
   responsiveness.
 - **Logging:** log lifecycle + request/response milestones at appropriate levels;
   on any error, log detailed diagnostic context (see §7).
-- **Domain / repo:** `azure_foundry_conversation` (repo: `hacs-azure_foundry_conversation`).
+- **Domain / repo:** `azure_foundry_conversation` (repo: `ha-azure-foundry-conversation`).
 
 ---
 
@@ -409,7 +409,7 @@ HA LLM API ──tool result──► our entity ──function_call_output─�
 ## 5. Proposed repository / file layout
 
 ```
-hacs-azure_foundry_conversation/
+ha-azure-foundry-conversation/
 ├─ custom_components/
 │  └─ azure_foundry_conversation/
 │     ├─ __init__.py          # setup entry, build+validate shared client, forward all platforms, unload

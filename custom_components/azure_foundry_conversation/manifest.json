@@ -5,10 +5,10 @@
   "codeowners": ["@andrewbackway"],
   "config_flow": true,
   "dependencies": ["conversation"],
-  "documentation": "https://github.com/Hacs/hacs-azure_foundry_conversation",
+  "documentation": "https://github.com/andrewbackway/ha-azure-foundry-conversation",
   "integration_type": "service",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/Hacs/hacs-azure_foundry_conversation/issues",
+  "issue_tracker": "https://github.com/andrewbackway/ha-azure-foundry-conversation/issues",
   "requirements": ["openai==2.45.0"],
   "version": "0.3.2"
 }
