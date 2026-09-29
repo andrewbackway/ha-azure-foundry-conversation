@@ -24,6 +24,7 @@ from custom_components.azure_foundry_conversation.const import (
 from homeassistant.const import CONF_API_KEY, CONF_LLM_HASS_API
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import llm
+from homeassistant.setup import async_setup_component
 
 ENDPOINT = "https://res.services.ai.azure.com/"
 SPEECH_ENDPOINT = "https://res.cognitiveservices.azure.com/"
@@ -62,8 +63,11 @@ class FakeStream:
 
 
 @pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations):
-    """Enable loading of the custom integration in every test."""
+async def auto_enable_custom_integrations(
+    hass: HomeAssistant, enable_custom_integrations
+):
+    """Initialize Home Assistant and enable loading custom integrations."""
+    await async_setup_component(hass, "homeassistant", {})
     yield
 
 

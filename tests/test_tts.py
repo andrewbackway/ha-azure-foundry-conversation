@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator
+from dataclasses import replace
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -163,11 +164,14 @@ async def test_stream_requests_raw_pcm(
 ) -> None:
     """Streaming requests a headerless raw-PCM format regardless of config."""
     subentry = _tts_subentry(init_integration)
-    init_integration.subentries[subentry.subentry_id].data = {
-        **subentry.data,
-        CONF_TTS_OUTPUT_FORMAT: "audio-24khz-48kbitrate-mono-mp3",
-    }
-    entity = AzureFoundryTTSEntity(init_integration, _tts_subentry(init_integration))
+    subentry = replace(
+        subentry,
+        data={
+            **subentry.data,
+            CONF_TTS_OUTPUT_FORMAT: "audio-24khz-48kbitrate-mono-mp3",
+        },
+    )
+    entity = AzureFoundryTTSEntity(init_integration, subentry)
     entity.hass = hass
 
     client = MagicMock()
@@ -218,11 +222,11 @@ async def test_stream_disabled_falls_back(
 ) -> None:
     """With streaming disabled, the full message is synthesized in one post."""
     subentry = _tts_subentry(init_integration)
-    init_integration.subentries[subentry.subentry_id].data = {
-        **subentry.data,
-        CONF_TTS_STREAMING: False,
-    }
-    entity = AzureFoundryTTSEntity(init_integration, _tts_subentry(init_integration))
+    subentry = replace(
+        subentry,
+        data={**subentry.data, CONF_TTS_STREAMING: False},
+    )
+    entity = AzureFoundryTTSEntity(init_integration, subentry)
     entity.hass = hass
 
     post_response = MagicMock()
