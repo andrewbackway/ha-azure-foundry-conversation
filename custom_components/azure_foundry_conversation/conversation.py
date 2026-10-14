@@ -35,26 +35,19 @@ async def async_setup_entry(
 def _is_image_generation_request(text: str) -> bool:
     """Recognise explicit requests to create a new image, rather than discuss images."""
     lowered = text.casefold().strip()
-    action = ("generate", "create", "draw", "make", "paint", "design")
-    subject = ("image", "picture", "illustration", "artwork", "drawing", "wallpaper")
-    return any(
-        lowered.startswith(verb + " ") and any(word in lowered for word in subject)
-        for verb in action
-    ) or any(
+    actions = ("generate", "create", "draw", "make", "paint", "design")
+    subjects = ("image", "picture", "illustration", "artwork", "drawing", "wallpaper")
+    if not any(action in lowered for action in actions):
+        return False
+    if not any(subject in lowered for subject in subjects):
+        return False
+    # Avoid turning clear refusals or requests not to create an image into API calls.
+    if any(
         phrase in lowered
-        for phrase in (
-            "generate an image",
-            "generate a picture",
-            "create an image",
-            "create a picture",
-            "draw me a",
-            "make me an image",
-            "make me a picture",
-            "create artwork",
-            "generate artwork",
-        )
-    )
-
+        for phrase in ("don't generate", "do not generate", "don't create", "do not create", "don't draw", "do not draw")
+    ):
+        return False
+    return True
 
 async def _image_result_stream(image_url: str):
     """Yield the saved image URL as an assistant response through the HA chat log."""
