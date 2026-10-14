@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from collections.abc import AsyncGenerator, Callable
 import asyncio
+from collections.abc import AsyncGenerator, Callable
 import struct
 from typing import Any
 from xml.sax.saxutils import escape, quoteattr

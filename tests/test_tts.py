@@ -109,7 +109,11 @@ async def test_tts_supported_voices_retries_network_errors(
     entity = AzureFoundryTTSEntity(init_integration, _tts_subentry(init_integration))
     entity.hass = hass
     voices_payload = [
-        {"Locale": "en-US", "ShortName": "en-US-JennyNeural", "DisplayName": "Jenny"}
+        {
+            "Locale": "en-US",
+            "ShortName": "en-US-JennyNeural",
+            "DisplayName": "Jenny",
+        }
     ]
     fetch = AsyncMock(side_effect=[OSError("temporary DNS failure"), voices_payload])
 
@@ -118,7 +122,9 @@ async def test_tts_supported_voices_retries_network_errors(
             "custom_components.azure_foundry_conversation.tts.async_list_voices",
             fetch,
         ),
-        patch("custom_components.azure_foundry_conversation.tts.asyncio.sleep") as sleep,
+        patch(
+            "custom_components.azure_foundry_conversation.tts.asyncio.sleep"
+        ) as sleep,
     ):
         await entity._async_load_voices()
 
