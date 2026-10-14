@@ -115,7 +115,7 @@ def _update_speech_options(
     """Update speech options, removing blank credentials to enable fallback."""
     options.update(user_input)
     for key in (endpoint_key, api_key_key):
-        if not str(options.get(key, "")).strip():
+        if not str(user_input.get(key, "")).strip():
             options.pop(key, None)
 
 
