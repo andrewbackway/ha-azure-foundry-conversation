@@ -91,11 +91,32 @@ async def test_generate_image_rejects_invalid_base64(
         await async_generate_image(hass, init_integration, "A red house")
 
 
-async def test_generate_image_service_is_registered(
+async def test_generate_image_service_returns_image(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
-    """The service is available after the integration is loaded."""
-    assert hass.services.has_service(DOMAIN, SERVICE_GENERATE_IMAGE)
+    """The service generates an image and returns its local URL."""
+    init_integration.runtime_data.images.generate = AsyncMock(
+        return_value=SimpleNamespace(
+            data=[
+                SimpleNamespace(
+                    b64_json=base64.b64encode(b"fake-png-data").decode("ascii")
+                )
+            ]
+        )
+    )
+
+    result = await hass.services.async_call(
+        DOMAIN,
+        SERVICE_GENERATE_IMAGE,
+        {"prompt": "A red house"},
+        blocking=True,
+        return_response=True,
+    )
+
+    assert result["model"] == IMAGE_MODEL
+    assert result["prompt"] == "A red house"
+    assert result["image_url"].startswith("/local/azure_foundry_images/")
+    assert Path(result["path"]).read_bytes() == b"fake-png-data"
 
 
 @pytest.mark.parametrize(
