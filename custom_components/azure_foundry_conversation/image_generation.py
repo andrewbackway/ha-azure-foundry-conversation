@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import binascii
 from pathlib import Path
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import openai
@@ -14,8 +15,10 @@ from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
-from . import AzureFoundryConfigEntry
 from .const import DOMAIN, LOGGER
+
+if TYPE_CHECKING:
+    from . import AzureFoundryConfigEntry
 
 SERVICE_GENERATE_IMAGE = "generate_image"
 CONF_PROMPT = "prompt"
