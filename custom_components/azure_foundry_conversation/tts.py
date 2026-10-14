@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import AsyncGenerator, Callable
+import asyncio
 import struct
 from typing import Any
 from xml.sax.saxutils import escape, quoteattr
@@ -40,6 +41,8 @@ from .const import (
 from .entity import AzureFoundrySpeechEntity
 
 _DEFAULT_LANGUAGE = "en-US"
+_VOICE_LIST_ATTEMPTS = 3
+_VOICE_LIST_RETRY_DELAYS = (1.0, 2.0)
 
 # Force a synthesis boundary on long run-on text with no punctuation so the
 # first audio chunk isn't held back by an unbounded buffer.
@@ -231,11 +234,31 @@ class AzureFoundryTTSEntity(tts.TextToSpeechEntity, AzureFoundrySpeechEntity):
                 "skipping voice list. Reconfigure the TTS entry to enable it"
             )
             return
-        try:
-            raw = await async_list_voices(self.hass, endpoint, api_key)
-        except httpx.HTTPError as err:
-            LOGGER.warning("Could not fetch Azure Speech voices: %s", err)
-            return
+        for attempt in range(_VOICE_LIST_ATTEMPTS):
+            try:
+                raw = await async_list_voices(self.hass, endpoint, api_key)
+                break
+            except (httpx.HTTPError, OSError) as err:
+                if attempt == _VOICE_LIST_ATTEMPTS - 1:
+                    LOGGER.debug(
+                        "Could not fetch optional Azure Speech voice list from "
+                        "%s after %d attempts: %s",
+                        endpoint,
+                        _VOICE_LIST_ATTEMPTS,
+                        err,
+                    )
+                    return
+                delay = _VOICE_LIST_RETRY_DELAYS[attempt]
+                LOGGER.warning(
+                    "Could not fetch Azure Speech voices from %s; retrying in "
+                    "%.0f seconds (%d/%d): %s",
+                    endpoint,
+                    delay,
+                    attempt + 1,
+                    _VOICE_LIST_ATTEMPTS - 1,
+                    err,
+                )
+                await asyncio.sleep(delay)
 
         voices: dict[str, list[tts.Voice]] = {}
         for item in raw:

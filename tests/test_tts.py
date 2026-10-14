@@ -102,6 +102,31 @@ async def test_tts_supported_voices(
     assert entity.async_get_supported_voices("xx-XX") is None
 
 
+async def test_tts_supported_voices_retries_network_errors(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Voice discovery retries a transient network failure."""
+    entity = AzureFoundryTTSEntity(init_integration, _tts_subentry(init_integration))
+    entity.hass = hass
+    voices_payload = [
+        {"Locale": "en-US", "ShortName": "en-US-JennyNeural", "DisplayName": "Jenny"}
+    ]
+    fetch = AsyncMock(side_effect=[OSError("temporary DNS failure"), voices_payload])
+
+    with (
+        patch(
+            "custom_components.azure_foundry_conversation.tts.async_list_voices",
+            fetch,
+        ),
+        patch("custom_components.azure_foundry_conversation.tts.asyncio.sleep") as sleep,
+    ):
+        await entity._async_load_voices()
+
+    assert fetch.await_count == 2
+    sleep.assert_awaited_once_with(1.0)
+    assert entity.async_get_supported_voices("en-US") is not None
+
+
 async def test_stream_output_single_sentence(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
