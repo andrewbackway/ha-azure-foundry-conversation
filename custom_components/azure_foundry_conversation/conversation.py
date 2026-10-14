@@ -49,12 +49,10 @@ def _is_image_generation_request(text: str) -> bool:
         return False
     return True
 
-async def _image_result_stream(image_url: str):
-    """Yield the saved image URL as an assistant response through the HA chat log."""
+async def _text_result_stream(text: str):
+    """Yield a short assistant response through the HA chat log."""
     yield {"role": "assistant"}
-    yield {
-        "content": f"Your image has been generated: [View image]({image_url})"
-    }
+    yield {"content": text}
 
 
 class AzureFoundryConversationEntity(
@@ -103,13 +101,13 @@ class AzureFoundryConversationEntity(
                     self.hass, self.entry, user_input.text
                 )
                 async for _content in chat_log.async_add_delta_content_stream(
-                    self.entity_id, _image_result_stream(image["image_url"])
+                    self.entity_id, _text_result_stream(f"Your image has been generated: [View image]({image['image_url']})")
                 ):
                     pass
             except HomeAssistantError as err:
                 async for _content in chat_log.async_add_delta_content_stream(
                     self.entity_id,
-                    _image_result_stream(f"Image generation failed: {err}"),
+                    _text_result_stream(f"Image generation failed: {err}"),
                 ):
                     pass
             return conversation.async_get_result_from_chat_log(user_input, chat_log)
