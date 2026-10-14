@@ -10,17 +10,18 @@ from unittest.mock import AsyncMock
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from homeassistant.core import HomeAssistant
-from homeassistant.exceptions import HomeAssistantError
-
-from custom_components.azure_foundry_conversation.conversation import _is_image_generation_request
+from custom_components.azure_foundry_conversation.const import DOMAIN
+from custom_components.azure_foundry_conversation.conversation import (
+    _is_image_generation_request,
+)
 from custom_components.azure_foundry_conversation.image_generation import (
     DEFAULT_IMAGE_SIZE,
     IMAGE_MODEL,
     SERVICE_GENERATE_IMAGE,
     async_generate_image,
 )
-from custom_components.azure_foundry_conversation.const import DOMAIN
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 
 
 async def test_generate_image_saves_png(
@@ -30,7 +31,11 @@ async def test_generate_image_saves_png(
     png_bytes = b"fake-png-data"
     init_integration.runtime_data.images.generate = AsyncMock(
         return_value=SimpleNamespace(
-            data=[SimpleNamespace(b64_json=base64.b64encode(png_bytes).decode("ascii"))]
+            data=[
+                SimpleNamespace(
+                    b64_json=base64.b64encode(png_bytes).decode("ascii")
+                )
+            ]
         )
     )
 
@@ -77,7 +82,9 @@ async def test_generate_image_rejects_invalid_base64(
 ) -> None:
     """Invalid image data is reported as a Home Assistant error."""
     init_integration.runtime_data.images.generate = AsyncMock(
-        return_value=SimpleNamespace(data=[SimpleNamespace(b64_json="not base64!")])
+        return_value=SimpleNamespace(
+            data=[SimpleNamespace(b64_json="not base64!")]
+        )
     )
 
     with pytest.raises(HomeAssistantError, match="invalid image data"):
