@@ -22,6 +22,7 @@ classic Chat Completions API rejects tools + reasoning for these models — see
 - **Conversation agent** — Responses API, tool calling (device control through
   HA Assist), streaming, and configurable reasoning effort.
 - **AI Task** — `ai_task.generate_data` with optional structured (JSON) output.
+- **Image generation** — create images with the Azure `gpt-image-1` deployment from conversation requests or the `azure_foundry_conversation.generate_image` service. Generated PNGs are saved locally under `/config/www/azure_foundry_images/` and exposed through Home Assistant's `/local/` URL.
 - **Speech-to-Text** — Azure AI Speech short-audio recognition.
 - **Text-to-Speech** — Azure AI Speech neural voices via SSML, with low-latency
   streaming that plays audio as it is synthesized (sentence-by-sentence as the
@@ -32,6 +33,7 @@ classic Chat Completions API rejects tools + reasoning for these models — see
 - An **Azure AI Foundry** (AI Services) resource.
 - A **chat model deployment** that supports the Responses API with tools
   (e.g. `gpt-5.6-sol`). These models generally require Tier 5/6 quota.
+- For image generation: deploy an image model with the deployment name `gpt-image-1` on the same Azure endpoint and ensure your resource has access/quota for it. Image generation is separate from the chat deployment.
 - For STT/TTS: **Azure AI Speech** access. A multi-service Azure AI Foundry
   resource exposes a single key that works for both the LLM and Speech — only the
   Speech endpoint URL differs from the OpenAI endpoint.
@@ -142,6 +144,23 @@ several agents with different deployments or prompts.
 - "Turn on the kitchen light." (device control via Assist)
 - "What's the weather like?" (chat)
 - `ai_task.generate_data` with a `structure` to get JSON back from the model.
+- Ask the conversation agent directly, for example: `Create an image of a red campervan beside an Australian beach at sunset`. Explicit image-creation requests are sent to `gpt-image-1`; other messages continue through the chat model.
+
+### Image generation service
+
+The integration registers `azure_foundry_conversation.generate_image` as a Home Assistant service. It supports service responses, so use `return_response: true` from a script or automation that calls the service. Required input is `prompt`; optional inputs are `size` and `config_entry_id`. The supported sizes are `1024x1024`, `1536x1024` (landscape), and `1024x1536` (portrait). The default size is `1024x1024` and quality is set to high.
+
+Example service call:
+
+```yaml
+action: azure_foundry_conversation.generate_image
+data:
+  prompt: A photorealistic red campervan beside an Australian beach at sunset
+  size: 1536x1024
+response_variable: generated_image
+```
+
+The service response includes `image_url` (a Home Assistant `/local/...` URL), `path` (the saved file path), `prompt`, `model`, and `size`. With multiple Azure connections, set `config_entry_id` to the desired config entry ID; otherwise the first loaded integration entry is used. The generated image is stored in Home Assistant's `www` directory, so it persists across restarts. Make sure your Home Assistant backup and storage policies cover this directory.
 
 ## Child-friendly guardrail prompt
 
