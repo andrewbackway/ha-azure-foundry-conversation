@@ -63,7 +63,9 @@ async def async_generate_image(
         )
     except openai.RateLimitError as err:
         LOGGER.warning("Azure image generation rate limited: %s", err)
-        raise HomeAssistantError("Azure image generation is rate limited or out of quota") from err
+        raise HomeAssistantError(
+            "Azure image generation is rate limited or out of quota"
+        ) from err
     except openai.BadRequestError as err:
         LOGGER.warning("Azure image generation rejected the request: %s", err)
         raise HomeAssistantError("Azure rejected the image generation request") from err
@@ -91,7 +93,9 @@ async def async_generate_image(
         await hass.async_add_executor_job(_write_image)
     except OSError as err:
         LOGGER.error("Unable to save generated image: %s", err)
-        raise HomeAssistantError("Unable to save the generated image to Home Assistant") from err
+        raise HomeAssistantError(
+            "Unable to save the generated image to Home Assistant"
+        ) from err
 
     return {
         "image_url": f"/local/{IMAGE_DIRECTORY}/{filename}",
