@@ -71,7 +71,9 @@ async def async_generate_image(
         raise HomeAssistantError("Azure rejected the image generation request") from err
     except openai.OpenAIError as err:
         LOGGER.error("Azure image generation failed: %s", err)
-        raise HomeAssistantError("Unable to generate an image with Azure AI Foundry") from err
+        raise HomeAssistantError(
+            "Unable to generate an image with Azure AI Foundry"
+        ) from err
 
     if not response.data or not response.data[0].b64_json:
         raise HomeAssistantError("Azure returned no image data")
