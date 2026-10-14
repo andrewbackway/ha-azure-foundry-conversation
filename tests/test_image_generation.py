@@ -13,6 +13,7 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
+from custom_components.azure_foundry_conversation.conversation import _is_image_generation_request
 from custom_components.azure_foundry_conversation.image_generation import (
     DEFAULT_IMAGE_SIZE,
     IMAGE_MODEL,
@@ -88,3 +89,18 @@ async def test_generate_image_service_is_registered(
 ) -> None:
     """The service is available after the integration is loaded."""
     assert hass.services.has_service(DOMAIN, SERVICE_GENERATE_IMAGE)
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ("Create an image of a red campervan", True),
+        ("Can you draw a picture of a kookaburra?", True),
+        ("What is image generation?", False),
+        ("Turn on the kitchen light", False),
+        ("Do not create an image", False),
+    ],
+)
+def test_image_generation_request_detection(message: str, expected: bool) -> None:
+    """Only explicit creation requests bypass the normal conversation model."""
+    assert _is_image_generation_request(message) is expected
