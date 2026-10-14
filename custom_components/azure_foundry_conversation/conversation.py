@@ -111,7 +111,8 @@ class AzureFoundryConversationEntity(
                 async for _content in chat_log.async_add_delta_content_stream(
                     self.entity_id,
                     _text_result_stream(
-                        f"Your image has been generated: [View image]({image['image_url']})"
+                        "Your image has been generated: "
+                        f"[View image]({image['image_url']})"
                     ),
                 ):
                     pass
