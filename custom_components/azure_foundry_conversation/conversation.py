@@ -44,10 +44,18 @@ def _is_image_generation_request(text: str) -> bool:
     # Avoid turning clear refusals or requests not to create an image into API calls.
     if any(
         phrase in lowered
-        for phrase in ("don't generate", "do not generate", "don't create", "do not create", "don't draw", "do not draw")
+        for phrase in (
+            "don't generate",
+            "do not generate",
+            "don't create",
+            "do not create",
+            "don't draw",
+            "do not draw",
+        )
     ):
         return False
     return True
+
 
 async def _text_result_stream(text: str):
     """Yield a short assistant response through the HA chat log."""
@@ -101,7 +109,10 @@ class AzureFoundryConversationEntity(
                     self.hass, self.entry, user_input.text
                 )
                 async for _content in chat_log.async_add_delta_content_stream(
-                    self.entity_id, _text_result_stream(f"Your image has been generated: [View image]({image['image_url']})")
+                    self.entity_id,
+                    _text_result_stream(
+                        f"Your image has been generated: [View image]({image['image_url']})"
+                    ),
                 ):
                     pass
             except HomeAssistantError as err:
