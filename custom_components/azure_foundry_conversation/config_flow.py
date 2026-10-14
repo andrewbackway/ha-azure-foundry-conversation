@@ -106,6 +106,19 @@ async def validate_input(hass, data: dict[str, Any]) -> None:
     await client.with_options(timeout=10.0).models.list()
 
 
+def _update_speech_options(
+    options: dict[str, Any],
+    user_input: dict[str, Any],
+    endpoint_key: str,
+    api_key_key: str,
+) -> None:
+    """Update speech options, removing blank credentials to enable fallback."""
+    options.update(user_input)
+    for key in (endpoint_key, api_key_key):
+        if not str(options.get(key, "")).strip():
+            options.pop(key, None)
+
+
 class AzureFoundryConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Azure AI Foundry Conversation."""
 
@@ -477,7 +490,9 @@ class STTSubentryFlowHandler(ConfigSubentryFlow):
         )
 
         if user_input is not None:
-            options.update(user_input)
+            _update_speech_options(
+                options, user_input, CONF_STT_ENDPOINT, CONF_STT_API_KEY
+            )
             name = options.pop(CONF_NAME, None)
             if self._is_new:
                 return self.async_create_entry(title=name or "", data=options)
@@ -555,7 +570,9 @@ class TTSSubentryFlowHandler(ConfigSubentryFlow):
         )
 
         if user_input is not None:
-            options.update(user_input)
+            _update_speech_options(
+                options, user_input, CONF_TTS_ENDPOINT, CONF_TTS_API_KEY
+            )
             name = options.pop(CONF_NAME, None)
             if self._is_new:
                 return self.async_create_entry(title=name or "", data=options)
