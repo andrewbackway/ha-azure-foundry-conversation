@@ -603,7 +603,9 @@ Speech **endpoint URI** differs from the OpenAI endpoint.
 - `"dependencies": ["conversation"]`, `"after_dependencies": ["assist_pipeline",
   "intent"]` (as in the sample).
 - Platforms forwarded: `AI_TASK`, `CONVERSATION`, `STT`, `TTS`.
-- `"requirements": ["openai==2.45.0"]` — pin the exact version whose `responses`
+- `"requirements": ["openai>=2.45.0,<4.0.0"]` — allow Home Assistant's exact
+  OpenAI SDK pin to satisfy this integration as well, while keeping the
+  dependency within the tested 2.x/3.x API range.
   streaming surface is tested (the sample pins the same family). STT/TTS use
   direct REST calls (via HA's shared aiohttp session), no extra dependency.
 - `"config_flow": true`, `"integration_type": "service"`,
