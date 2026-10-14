@@ -13,6 +13,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from .client import create_client, endpoint_host
 from .const import CONF_ENDPOINT, DOMAIN, LOGGER
+from .image_generation import async_setup_image_service
 
 PLATFORMS = (
     Platform.AI_TASK,
@@ -57,6 +58,7 @@ async def async_setup_entry(
     entry.runtime_data = client
     LOGGER.info("Azure Foundry connection ready (endpoint=%s)", endpoint_host(endpoint))
 
+    await async_setup_image_service(hass)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     entry.async_on_unload(entry.add_update_listener(async_update_options))
     return True
