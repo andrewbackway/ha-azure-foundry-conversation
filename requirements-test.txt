@@ -1,5 +1,7 @@
 pytest-homeassistant-custom-component==0.13.316
 hassil==3.5.0
 home-assistant-intents==2026.1.28
+mutagen
 openai>=2.45.0,<4.0.0
+PyTurboJPEG
 voluptuous-openapi>=0.2.0,<0.5.0
