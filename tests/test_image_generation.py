@@ -31,11 +31,7 @@ async def test_generate_image_saves_png(
     png_bytes = b"fake-png-data"
     init_integration.runtime_data.images.generate = AsyncMock(
         return_value=SimpleNamespace(
-            data=[
-                SimpleNamespace(
-                    b64_json=base64.b64encode(png_bytes).decode("ascii")
-                )
-            ]
+            data=[SimpleNamespace(b64_json=base64.b64encode(png_bytes).decode("ascii"))]
         )
     )
 
@@ -72,9 +68,7 @@ async def test_generate_image_rejects_unsupported_size(
 ) -> None:
     """Only image sizes supported by gpt-image-1 are accepted."""
     with pytest.raises(HomeAssistantError, match="Unsupported image size"):
-        await async_generate_image(
-            hass, init_integration, "A red house", "512x512"
-        )
+        await async_generate_image(hass, init_integration, "A red house", "512x512")
 
 
 async def test_generate_image_rejects_invalid_base64(
@@ -82,9 +76,7 @@ async def test_generate_image_rejects_invalid_base64(
 ) -> None:
     """Invalid image data is reported as a Home Assistant error."""
     init_integration.runtime_data.images.generate = AsyncMock(
-        return_value=SimpleNamespace(
-            data=[SimpleNamespace(b64_json="not base64!")]
-        )
+        return_value=SimpleNamespace(data=[SimpleNamespace(b64_json="not base64!")])
     )
 
     with pytest.raises(HomeAssistantError, match="invalid image data"):
