@@ -14,6 +14,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 from . import AzureFoundryConfigEntry
 from .const import DOMAIN, LOGGER
 from .entity import AzureFoundryBaseLLMEntity
+from .image_generation import async_generate_image
 
 
 async def async_setup_entry(
@@ -29,6 +30,37 @@ async def async_setup_entry(
             [AzureFoundryConversationEntity(config_entry, subentry)],
             config_subentry_id=subentry.subentry_id,
         )
+
+
+def _is_image_generation_request(text: str) -> bool:
+    """Recognise explicit requests to create a new image, rather than discuss images."""
+    lowered = text.casefold().strip()
+    actions = ("generate", "create", "draw", "make", "paint", "design")
+    subjects = ("image", "picture", "illustration", "artwork", "drawing", "wallpaper")
+    if not any(action in lowered for action in actions):
+        return False
+    if not any(subject in lowered for subject in subjects):
+        return False
+    # Avoid turning clear refusals or requests not to create an image into API calls.
+    if any(
+        phrase in lowered
+        for phrase in (
+            "don't generate",
+            "do not generate",
+            "don't create",
+            "do not create",
+            "don't draw",
+            "do not draw",
+        )
+    ):
+        return False
+    return True
+
+
+async def _text_result_stream(text: str):
+    """Yield a short assistant response through the HA chat log."""
+    yield {"role": "assistant"}
+    yield {"content": text}
 
 
 class AzureFoundryConversationEntity(
@@ -71,6 +103,27 @@ class AzureFoundryConversationEntity(
         chat_log: conversation.ChatLog,
     ) -> conversation.ConversationResult:
         """Process a user turn and return the assistant result."""
+        if _is_image_generation_request(user_input.text):
+            try:
+                image = await async_generate_image(
+                    self.hass, self.entry, user_input.text
+                )
+                async for _content in chat_log.async_add_delta_content_stream(
+                    self.entity_id,
+                    _text_result_stream(
+                        "Your image has been generated: "
+                        f"[View image]({image['image_url']})"
+                    ),
+                ):
+                    pass
+            except HomeAssistantError as err:
+                async for _content in chat_log.async_add_delta_content_stream(
+                    self.entity_id,
+                    _text_result_stream(f"Image generation failed: {err}"),
+                ):
+                    pass
+            return conversation.async_get_result_from_chat_log(user_input, chat_log)
+
         options = self.subentry.data
         try:
             await chat_log.async_provide_llm_data(
