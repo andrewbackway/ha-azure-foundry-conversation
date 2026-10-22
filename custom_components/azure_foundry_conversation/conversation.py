@@ -42,7 +42,7 @@ def _is_image_generation_request(text: str) -> bool:
     if not any(subject in lowered for subject in subjects):
         return False
     # Avoid turning clear refusals or requests not to create an image into API calls.
-    if any(
+    return not any(
         phrase in lowered
         for phrase in (
             "don't generate",
@@ -52,9 +52,7 @@ def _is_image_generation_request(text: str) -> bool:
             "don't draw",
             "do not draw",
         )
-    ):
-        return False
-    return True
+    )
 
 
 async def _text_result_stream(text: str):
