@@ -6,6 +6,7 @@ import base64
 import binascii
 from collections.abc import Mapping
 from pathlib import Path
+import time
 from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
@@ -16,7 +17,9 @@ from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
+from .client import endpoint_host
 from .const import (
+    CONF_ENDPOINT,
     CONF_IMAGE_HEIGHT,
     CONF_IMAGE_MODEL,
     CONF_IMAGE_QUALITY,
@@ -43,6 +46,7 @@ CONF_IMAGE_SUBENTRY_ID = "image_subentry_id"
 IMAGE_MODEL = RECOMMENDED_IMAGE_MODEL
 DEFAULT_IMAGE_SIZE = RECOMMENDED_IMAGE_SIZE
 IMAGE_DIRECTORY = "azure_foundry_images"
+IMAGE_REQUEST_TIMEOUT = 180.0
 
 
 def _safe_filename() -> str:
@@ -104,8 +108,23 @@ async def async_request_image(
                 f"{', '.join(IMAGE_SIZES)} or valid custom dimensions"
             ) from err
 
+    host = endpoint_host(entry.data.get(CONF_ENDPOINT, ""))
+    LOGGER.info(
+        "Requesting image (entry=%s host=%s model=%s size=%s quality=%s "
+        "prompt_chars=%d timeout=%.0fs)",
+        entry.entry_id,
+        host,
+        model,
+        size,
+        quality,
+        len(prompt),
+        IMAGE_REQUEST_TIMEOUT,
+    )
+    started = time.monotonic()
     try:
-        response = await entry.runtime_data.images.generate(
+        response = await entry.runtime_data.with_options(
+            timeout=IMAGE_REQUEST_TIMEOUT, max_retries=0
+        ).images.generate(
             model=model,
             prompt=prompt,
             size=size,
@@ -113,6 +132,18 @@ async def async_request_image(
             quality=quality,
             output_format="png",
         )
+    except openai.APITimeoutError as err:
+        LOGGER.error(
+            "Azure image generation timed out after %.0fs (host=%s model=%s size=%s)",
+            time.monotonic() - started,
+            host,
+            model,
+            size,
+        )
+        raise HomeAssistantError(
+            f"Azure image generation timed out after {IMAGE_REQUEST_TIMEOUT:.0f} "
+            "seconds"
+        ) from err
     except openai.RateLimitError as err:
         LOGGER.warning("Azure image generation rate limited: %s", err)
         raise HomeAssistantError(
@@ -120,9 +151,17 @@ async def async_request_image(
         ) from err
     except openai.BadRequestError as err:
         LOGGER.warning("Azure image generation rejected the request: %s", err)
-        raise HomeAssistantError("Azure rejected the image generation request") from err
+        raise HomeAssistantError(
+            f"Azure rejected the image generation request: {err}"
+        ) from err
     except openai.OpenAIError as err:
-        LOGGER.error("Azure image generation failed: %s", err)
+        LOGGER.error(
+            "Azure image generation failed after %.1fs (host=%s model=%s): %s",
+            time.monotonic() - started,
+            host,
+            model,
+            err,
+        )
         if getattr(err, "status_code", None) == 404:
             raise HomeAssistantError(
                 f"Azure image deployment {model!r} was not found for this endpoint"
@@ -130,6 +169,13 @@ async def async_request_image(
         raise HomeAssistantError(
             "Unable to generate an image with Azure AI Foundry"
         ) from err
+
+    LOGGER.info(
+        "Azure image generated in %.1fs (model=%s size=%s)",
+        time.monotonic() - started,
+        model,
+        size,
+    )
 
     if not response.data or not response.data[0].b64_json:
         raise HomeAssistantError("Azure returned no image data")

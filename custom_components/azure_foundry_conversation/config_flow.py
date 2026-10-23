@@ -591,9 +591,7 @@ class ImageSubentryFlowHandler(ConfigSubentryFlow):
             )
         )
         schema[
-            vol.Optional(
-                CONF_IMAGE_WIDTH, default=options.get(CONF_IMAGE_WIDTH, 1024)
-            )
+            vol.Optional(CONF_IMAGE_WIDTH, default=options.get(CONF_IMAGE_WIDTH, 1024))
         ] = vol.All(int, vol.Range(min=256, max=3840))
         schema[
             vol.Optional(

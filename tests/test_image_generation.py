@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -33,6 +34,24 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
 
+def _entry_with_image_subentry(
+    entry: MockConfigEntry, options: dict[str, Any]
+) -> SimpleNamespace:
+    """Build an entry-like object with the supplied image subentry options."""
+    return SimpleNamespace(
+        entry_id=entry.entry_id,
+        data=entry.data,
+        runtime_data=entry.runtime_data,
+        subentries={
+            "image-subentry": SimpleNamespace(
+                subentry_type=SUBENTRY_IMAGE,
+                subentry_id="image-subentry",
+                data=options,
+            )
+        },
+    )
+
+
 def test_service_selects_connection_with_image_subentry() -> None:
     """The service prefers the connection that has image configuration."""
     first = SimpleNamespace(entry_id="first", subentries={})
@@ -46,9 +65,7 @@ def test_service_selects_connection_with_image_subentry() -> None:
     )
 
     assert _select_config_entry([first, second]) is second
-    assert _select_config_entry(
-        [first, second], image_subentry_id="image-id"
-    ) is second
+    assert _select_config_entry([first, second], image_subentry_id="image-id") is second
 
 
 def test_service_requires_connection_when_image_config_is_ambiguous() -> None:
@@ -103,28 +120,25 @@ async def test_generate_image_uses_configured_image_subentry(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Image generation uses the deployment and defaults from its subentry."""
-    init_integration.subentries["image-subentry"] = SimpleNamespace(
-        subentry_type=SUBENTRY_IMAGE,
-        subentry_id="image-subentry",
-        data={
+    entry = _entry_with_image_subentry(
+        init_integration,
+        {
             CONF_IMAGE_MODEL: "my-image-deployment",
             CONF_IMAGE_SIZE: "1536x1024",
             CONF_IMAGE_QUALITY: "medium",
         },
     )
-    init_integration.runtime_data.images.generate = AsyncMock(
+    entry.runtime_data.images.generate = AsyncMock(
         return_value=SimpleNamespace(
-            data=[
-                SimpleNamespace(b64_json=base64.b64encode(b"png").decode("ascii"))
-            ]
+            data=[SimpleNamespace(b64_json=base64.b64encode(b"png").decode("ascii"))]
         )
     )
 
-    result = await async_generate_image(hass, init_integration, "A red house")
+    result = await async_generate_image(hass, entry, "A red house")
 
     assert result["model"] == "my-image-deployment"
     assert result["size"] == "1536x1024"
-    init_integration.runtime_data.images.generate.assert_awaited_once_with(
+    entry.runtime_data.images.generate.assert_awaited_once_with(
         model="my-image-deployment",
         prompt="A red house",
         size="1536x1024",
@@ -138,25 +152,23 @@ async def test_generate_image_uses_custom_dimensions(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Custom dimensions from the image subentry are passed to Azure."""
-    init_integration.subentries["image-subentry"] = SimpleNamespace(
-        subentry_type=SUBENTRY_IMAGE,
-        subentry_id="image-subentry",
-        data={
+    entry = _entry_with_image_subentry(
+        init_integration,
+        {
             CONF_IMAGE_SIZE: "custom",
             CONF_IMAGE_WIDTH: 1536,
             CONF_IMAGE_HEIGHT: 864,
         },
     )
-    init_integration.runtime_data.images.generate = AsyncMock(
+    entry.runtime_data.images.generate = AsyncMock(
         return_value=SimpleNamespace(
             data=[SimpleNamespace(b64_json=base64.b64encode(b"png").decode("ascii"))]
         )
     )
-    result = await async_generate_image(hass, init_integration, "A red house")
-    result = await async_generate_image(hass, init_integration, "A red house")
+    result = await async_generate_image(hass, entry, "A red house")
 
     assert result["size"] == "1536x864"
-    init_integration.runtime_data.images.generate.assert_awaited_once_with(
+    entry.runtime_data.images.generate.assert_awaited_once_with(
         model=IMAGE_MODEL,
         prompt="A red house",
         size="1536x864",
