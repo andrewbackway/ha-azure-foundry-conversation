@@ -206,6 +206,57 @@ async def async_generate_image(
     }
 
 
+def _select_config_entry(
+    entries: list[AzureFoundryConfigEntry],
+    config_entry_id: str | None = None,
+    image_subentry_id: str | None = None,
+) -> AzureFoundryConfigEntry:
+    """Select the connection with the requested image-generation configuration."""
+    if config_entry_id is not None:
+        entries = [entry for entry in entries if entry.entry_id == config_entry_id]
+    if not entries:
+        raise HomeAssistantError(
+            "No loaded Azure AI Foundry integration entry matches this request"
+        )
+
+    if image_subentry_id is not None:
+        matching_entries = [
+            entry
+            for entry in entries
+            if any(
+                subentry.subentry_type == SUBENTRY_IMAGE
+                and subentry.subentry_id == image_subentry_id
+                for subentry in entry.subentries.values()
+            )
+        ]
+        if len(matching_entries) != 1:
+            raise HomeAssistantError(
+                "The requested image generation entry was not found"
+            )
+        return matching_entries[0]
+
+    configured_entries = [
+        entry
+        for entry in entries
+        if any(
+            subentry.subentry_type == SUBENTRY_IMAGE
+            for subentry in entry.subentries.values()
+        )
+    ]
+    if len(configured_entries) == 1:
+        return configured_entries[0]
+    if len(configured_entries) > 1:
+        raise HomeAssistantError(
+            "Multiple image generation entries are configured; specify "
+            "config_entry_id or image_subentry_id"
+        )
+    if len(entries) == 1:
+        return entries[0]
+    raise HomeAssistantError(
+        "Multiple Azure AI Foundry connections are loaded; specify config_entry_id"
+    )
+
+
 def _service_schema() -> vol.Schema:
     """Build the service schema."""
     return vol.Schema(
@@ -222,24 +273,23 @@ async def async_setup_image_service(hass: HomeAssistant) -> None:
     """Register the image generation service once for the integration."""
 
     async def _handle_generate_image(call: ServiceCall) -> dict[str, str]:
-        entries = [
+        entries: list[AzureFoundryConfigEntry] = [
             entry
             for entry in hass.config_entries.async_entries(DOMAIN)
             if entry.state.value == "loaded"
         ]
-        requested_id = call.data.get(CONF_CONFIG_ENTRY_ID)
-        if requested_id:
-            entries = [entry for entry in entries if entry.entry_id == requested_id]
-        if not entries:
-            raise HomeAssistantError(
-                "No loaded Azure AI Foundry integration entry matches this request"
-            )
+        image_subentry_id = call.data.get(CONF_IMAGE_SUBENTRY_ID)
+        entry = _select_config_entry(
+            entries,
+            call.data.get(CONF_CONFIG_ENTRY_ID),
+            image_subentry_id,
+        )
         result = await async_generate_image(
             hass,
-            entries[0],
+            entry,
             call.data[CONF_PROMPT],
             call.data.get(CONF_SIZE),
-            call.data.get(CONF_IMAGE_SUBENTRY_ID),
+            image_subentry_id,
         )
         return result
 

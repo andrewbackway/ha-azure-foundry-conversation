@@ -26,10 +26,38 @@ from custom_components.azure_foundry_conversation.image_generation import (
     DEFAULT_IMAGE_SIZE,
     IMAGE_MODEL,
     SERVICE_GENERATE_IMAGE,
+    _select_config_entry,
     async_generate_image,
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+
+
+def test_service_selects_connection_with_image_subentry() -> None:
+    """The service prefers the connection that has image configuration."""
+    first = SimpleNamespace(entry_id="first", subentries={})
+    image_subentry = SimpleNamespace(
+        subentry_type=SUBENTRY_IMAGE,
+        subentry_id="image-id",
+    )
+    second = SimpleNamespace(
+        entry_id="second",
+        subentries={"image-id": image_subentry},
+    )
+
+    assert _select_config_entry([first, second]) is second
+    assert _select_config_entry(
+        [first, second], image_subentry_id="image-id"
+    ) is second
+
+
+def test_service_requires_connection_when_image_config_is_ambiguous() -> None:
+    """The service avoids silently selecting the wrong Azure connection."""
+    first = SimpleNamespace(entry_id="first", subentries={})
+    second = SimpleNamespace(entry_id="second", subentries={})
+
+    with pytest.raises(HomeAssistantError, match="specify config_entry_id"):
+        _select_config_entry([first, second])
 
 
 async def test_generate_image_saves_png(

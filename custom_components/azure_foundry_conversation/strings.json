@@ -116,19 +116,15 @@
             "name": "Name",
             "image_model": "Model (Azure deployment name)",
             "image_size": "Image size",
-            "image_quality": "Image quality"
+            "image_quality": "Image quality",
+            "image_width": "Custom width",
+            "image_height": "Custom height"
           },
           "data_description": {
             "image_model": "The Azure deployment name of your image model, e.g. gpt-image-1",
-            "image_size": "Choose a preset, or select Custom and submit to enter width and height on the next step"
-          }
-        },
-        "custom_size": {
-          "title": "Custom image size",
-          "description": "Width and height must be multiples of 16. The aspect ratio must be between 1:3 and 3:1, and the total pixel count must be between 655,360 and 8,294,400.",
-          "data": {
-            "image_width": "Width",
-            "image_height": "Height"
+            "image_size": "Choose Custom to use the width and height fields below",
+            "image_width": "Used only when Custom image size is selected",
+            "image_height": "Used only when Custom image size is selected"
           }
         }
       },
