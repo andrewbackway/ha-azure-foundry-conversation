@@ -120,7 +120,7 @@
           },
           "data_description": {
             "image_model": "The Azure deployment name of your image model, e.g. gpt-image-1",
-            "image_size": "Choose a preset or select Custom to enter dimensions"
+            "image_size": "Choose a preset, or select Custom and submit to enter width and height on the next step"
           }
         },
         "custom_size": {
