@@ -30,12 +30,16 @@ CONF_VERBOSITY = "verbosity"
 # Image generation (subentry) option keys.
 CONF_IMAGE_MODEL = "image_model"
 CONF_IMAGE_SIZE = "image_size"
+CONF_IMAGE_WIDTH = "image_width"
+CONF_IMAGE_HEIGHT = "image_height"
 CONF_IMAGE_QUALITY = "image_quality"
 SUBENTRY_IMAGE = "image_generation"
+CUSTOM_IMAGE_SIZE = "custom"
 RECOMMENDED_IMAGE_MODEL = "gpt-image-1"
 RECOMMENDED_IMAGE_SIZE = "1024x1024"
 RECOMMENDED_IMAGE_QUALITY = "high"
 IMAGE_SIZES: list[str] = ["1024x1024", "1536x1024", "1024x1536"]
+IMAGE_SIZE_OPTIONS: list[str] = [*IMAGE_SIZES, CUSTOM_IMAGE_SIZE]
 IMAGE_QUALITIES: list[str] = ["low", "medium", "high"]
 
 # Speech-to-text (subentry) option keys.

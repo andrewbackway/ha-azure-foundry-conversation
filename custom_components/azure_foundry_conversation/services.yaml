@@ -1,6 +1,6 @@
 generate_image:
   name: Generate image
-  description: Generate a PNG image using the Azure AI Foundry gpt-image-1 deployment and save it in Home Assistant's local www directory.
+  description: Generate a PNG image using the deployment configured in an Image generation entry and save it in Home Assistant's local www directory.
   fields:
     prompt:
       name: Prompt
@@ -12,9 +12,8 @@ generate_image:
           multiline: true
     size:
       name: Image size
-      description: Output dimensions. The default is square.
+      description: Override the size configured in the Image generation entry.
       required: false
-      default: 1024x1024
       selector:
         select:
           options:
@@ -27,6 +26,12 @@ generate_image:
     config_entry_id:
       name: Azure AI Foundry connection ID
       description: Optional config entry ID to select a specific connection when multiple are configured.
+      required: false
+      selector:
+        text:
+    image_subentry_id:
+      name: Image generation entry ID
+      description: Optional subentry ID when multiple image generation entries are configured.
       required: false
       selector:
         text:

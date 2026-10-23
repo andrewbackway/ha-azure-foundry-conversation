@@ -13,15 +13,13 @@ from . import AzureFoundryConfigEntry
 from .const import (
     CONF_IMAGE_MODEL,
     CONF_IMAGE_QUALITY,
-    CONF_IMAGE_SIZE,
     LOGGER,
     RECOMMENDED_IMAGE_MODEL,
     RECOMMENDED_IMAGE_QUALITY,
-    RECOMMENDED_IMAGE_SIZE,
     SUBENTRY_IMAGE,
 )
 from .entity import AzureFoundryBaseLLMEntity
-from .image_generation import async_request_image
+from .image_generation import async_request_image, configured_image_size
 
 
 async def async_setup_entry(
@@ -65,7 +63,7 @@ class AzureFoundryImageEntity(
         """Handle a generate-image task."""
         options = self.subentry.data
         model = options.get(CONF_IMAGE_MODEL, RECOMMENDED_IMAGE_MODEL)
-        size = options.get(CONF_IMAGE_SIZE, RECOMMENDED_IMAGE_SIZE)
+        size = configured_image_size(options)
         image_bytes = await async_request_image(
             self.entry,
             task.instructions,

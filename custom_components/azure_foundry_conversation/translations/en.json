@@ -119,9 +119,21 @@
             "image_quality": "Image quality"
           },
           "data_description": {
-            "image_model": "The Azure deployment name of your image model, e.g. gpt-image-1"
+            "image_model": "The Azure deployment name of your image model, e.g. gpt-image-1",
+            "image_size": "Choose a preset or select Custom to enter dimensions"
+          }
+        },
+        "custom_size": {
+          "title": "Custom image size",
+          "description": "Width and height must be multiples of 16. The aspect ratio must be between 1:3 and 3:1, and the total pixel count must be between 655,360 and 8,294,400.",
+          "data": {
+            "image_width": "Width",
+            "image_height": "Height"
           }
         }
+      },
+      "error": {
+        "invalid_custom_size": "Unsupported dimensions. Check the required multiples, aspect ratio, and pixel-count limits."
       }
     },
     "stt": {
@@ -196,6 +208,14 @@
         "low": "Low",
         "medium": "Medium",
         "high": "High"
+      }
+    },
+    "image_size": {
+      "options": {
+        "1024x1024": "Square (1024 × 1024)",
+        "1536x1024": "Landscape (1536 × 1024)",
+        "1024x1536": "Portrait (1024 × 1536)",
+        "custom": "Custom"
       }
     },
     "stt_format": {

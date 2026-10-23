@@ -40,9 +40,11 @@ from .client import create_client, endpoint_host
 from .const import (
     CONF_CHAT_MODEL,
     CONF_ENDPOINT,
+    CONF_IMAGE_HEIGHT,
     CONF_IMAGE_MODEL,
     CONF_IMAGE_QUALITY,
     CONF_IMAGE_SIZE,
+    CONF_IMAGE_WIDTH,
     CONF_MAX_TOKENS,
     CONF_REASONING_EFFORT,
     CONF_RECOMMENDED,
@@ -64,6 +66,7 @@ from .const import (
     CONF_TTS_VOICE,
     CONF_TTS_VOLUME,
     CONF_VERBOSITY,
+    CUSTOM_IMAGE_SIZE,
     DEFAULT_AI_TASK_NAME,
     DEFAULT_CONVERSATION_NAME,
     DEFAULT_IMAGE_NAME,
@@ -77,7 +80,7 @@ from .const import (
     DEFAULT_TTS_VOICE,
     DOMAIN,
     IMAGE_QUALITIES,
-    IMAGE_SIZES,
+    IMAGE_SIZE_OPTIONS,
     LOGGER,
     RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CHAT_MODEL,
@@ -98,6 +101,7 @@ from .const import (
     VERBOSITY_OPTIONS,
     reasoning_effort_options,
 )
+from .image_generation import validate_custom_image_dimensions
 
 STEP_USER_DATA_SCHEMA = vol.Schema(
     {
@@ -569,7 +573,8 @@ class ImageSubentryFlowHandler(ConfigSubentryFlow):
             )
         ] = SelectSelector(
             SelectSelectorConfig(
-                options=IMAGE_SIZES,
+                options=IMAGE_SIZE_OPTIONS,
+                translation_key=CONF_IMAGE_SIZE,
                 mode=SelectSelectorMode.DROPDOWN,
             )
         )
@@ -588,6 +593,10 @@ class ImageSubentryFlowHandler(ConfigSubentryFlow):
 
         if user_input is not None:
             options.update(user_input)
+            if options[CONF_IMAGE_SIZE] == CUSTOM_IMAGE_SIZE:
+                return await self.async_step_custom_size()
+            options.pop(CONF_IMAGE_WIDTH, None)
+            options.pop(CONF_IMAGE_HEIGHT, None)
             name = options.pop(CONF_NAME, None)
             if self._is_new:
                 return self.async_create_entry(title=name or "", data=options)
@@ -602,6 +611,49 @@ class ImageSubentryFlowHandler(ConfigSubentryFlow):
             data_schema=self.add_suggested_values_to_schema(
                 vol.Schema(schema), options
             ),
+        )
+
+    async def async_step_custom_size(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Collect custom image dimensions."""
+        options = self.options
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_IMAGE_WIDTH, default=options.get(CONF_IMAGE_WIDTH, 1024)
+                ): vol.All(int, vol.Range(min=256, max=3840)),
+                vol.Required(
+                    CONF_IMAGE_HEIGHT, default=options.get(CONF_IMAGE_HEIGHT, 1024)
+                ): vol.All(int, vol.Range(min=256, max=3840)),
+            }
+        )
+
+        if user_input is not None:
+            try:
+                validate_custom_image_dimensions(
+                    user_input[CONF_IMAGE_WIDTH], user_input[CONF_IMAGE_HEIGHT]
+                )
+            except ValueError:
+                options.update(user_input)
+                return self.async_show_form(
+                    step_id="custom_size",
+                    data_schema=self.add_suggested_values_to_schema(schema, options),
+                    errors={"base": "invalid_custom_size"},
+                )
+            options.update(user_input)
+            name = options.pop(CONF_NAME, None)
+            if self._is_new:
+                return self.async_create_entry(title=name or "", data=options)
+            return self.async_update_and_abort(
+                self._get_entry(),
+                self._get_reconfigure_subentry(),
+                data=options,
+            )
+
+        return self.async_show_form(
+            step_id="custom_size",
+            data_schema=self.add_suggested_values_to_schema(schema, options),
         )
 
 

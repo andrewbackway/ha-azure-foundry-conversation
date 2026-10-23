@@ -162,9 +162,9 @@ several agents with different deployments or prompts.
 
 ### Image generation service
 
-You can also add an **Image generation** entry from the integration's ⋮ menu (**Add image generation**). It creates an AI Task entity with image generation support (use it with `ai_task.generate_image`), using the deployment name, size and quality you choose.
+You can also add an **Image generation** entry from the integration's ⋮ menu (**Add image generation**). It creates an AI Task entity with image generation support (use it with `ai_task.generate_image`), using the deployment name, size and quality you choose. Choose **Custom** for the size to enter width and height. Custom dimensions must be multiples of 16, have an aspect ratio between 1:3 and 3:1, and contain 655,360–8,294,400 pixels (maximum edge 3,840 pixels).
 
-The integration registers `azure_foundry_conversation.generate_image` as a Home Assistant service. It supports service responses, so use `return_response: true` from a script or automation that calls the service. Required input is `prompt`; optional inputs are `size` and `config_entry_id`. The supported sizes are `1024x1024`, `1536x1024` (landscape), and `1024x1536` (portrait). The default size is `1024x1024` and quality is set to high.
+The integration registers `azure_foundry_conversation.generate_image` as a Home Assistant service. It supports service responses, so use `return_response: true` from a script or automation that calls the service. Required input is `prompt`; optional inputs are `size`, `config_entry_id` and `image_subentry_id`. The deployment name, default size and quality come from the Image generation entry. `size` overrides that entry's size. Supported sizes are `1024x1024`, `1536x1024` (landscape), and `1024x1536` (portrait).
 
 Example service call:
 
@@ -176,7 +176,7 @@ data:
 response_variable: generated_image
 ```
 
-The service response includes `image_url` (a Home Assistant `/local/...` URL), `path` (the saved file path), `prompt`, `model`, and `size`. With multiple Azure connections, set `config_entry_id` to the desired config entry ID; otherwise the first loaded integration entry is used. The generated image is stored in Home Assistant's `www` directory, so it persists across restarts. Make sure your Home Assistant backup and storage policies cover this directory.
+The service response includes `image_url` (a Home Assistant `/local/...` URL), `path` (the saved file path), `prompt`, `model`, and `size`. With multiple Azure connections, set `config_entry_id` to the desired config entry ID; otherwise the first loaded integration entry is used. If that connection has multiple Image generation entries, set `image_subentry_id`; otherwise its only configured Image generation entry is used. The generated image is stored in Home Assistant's `www` directory, so it persists across restarts. Make sure your Home Assistant backup and storage policies cover this directory.
 
 ## Troubleshooting
 
