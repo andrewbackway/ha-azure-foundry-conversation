@@ -103,6 +103,27 @@
         }
       }
     },
+    "image_generation": {
+      "initiate_flow": {
+        "user": "Add image generation",
+        "reconfigure": "Reconfigure image generation"
+      },
+      "entry_type": "Image generation",
+      "step": {
+        "init": {
+          "title": "Image generation",
+          "data": {
+            "name": "Name",
+            "image_model": "Model (Azure deployment name)",
+            "image_size": "Image size",
+            "image_quality": "Image quality"
+          },
+          "data_description": {
+            "image_model": "The Azure deployment name of your image model, e.g. gpt-image-1"
+          }
+        }
+      }
+    },
     "stt": {
       "initiate_flow": {
         "user": "Add speech-to-text",
@@ -164,6 +185,13 @@
       }
     },
     "verbosity": {
+      "options": {
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High"
+      }
+    },
+    "image_quality": {
       "options": {
         "low": "Low",
         "medium": "Medium",

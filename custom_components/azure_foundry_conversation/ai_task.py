@@ -10,8 +10,18 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AzureFoundryConfigEntry
-from .const import LOGGER
+from .const import (
+    CONF_IMAGE_MODEL,
+    CONF_IMAGE_QUALITY,
+    CONF_IMAGE_SIZE,
+    LOGGER,
+    RECOMMENDED_IMAGE_MODEL,
+    RECOMMENDED_IMAGE_QUALITY,
+    RECOMMENDED_IMAGE_SIZE,
+    SUBENTRY_IMAGE,
+)
 from .entity import AzureFoundryBaseLLMEntity
+from .image_generation import async_request_image
 
 
 async def async_setup_entry(
@@ -19,13 +29,58 @@ async def async_setup_entry(
     config_entry: AzureFoundryConfigEntry,
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """Publish an AI Task entity per ai_task_data subentry."""
+    """Publish an AI Task entity per ai_task_data and image subentry."""
     for subentry in config_entry.subentries.values():
-        if subentry.subentry_type != "ai_task_data":
+        if subentry.subentry_type == "ai_task_data":
+            entity: ai_task.AITaskEntity = AzureFoundryAITaskEntity(
+                config_entry, subentry
+            )
+        elif subentry.subentry_type == SUBENTRY_IMAGE:
+            entity = AzureFoundryImageEntity(config_entry, subentry)
+        else:
             continue
-        async_add_entities(
-            [AzureFoundryAITaskEntity(config_entry, subentry)],
-            config_subentry_id=subentry.subentry_id,
+        async_add_entities([entity], config_subentry_id=subentry.subentry_id)
+
+
+class AzureFoundryImageEntity(
+    ai_task.AITaskEntity,
+    AzureFoundryBaseLLMEntity,
+):
+    """Azure AI Foundry image generation entity."""
+
+    _attr_supported_features = ai_task.AITaskEntityFeature.GENERATE_IMAGE
+
+    def __init__(self, entry: AzureFoundryConfigEntry, subentry) -> None:
+        """Initialize the entity."""
+        super().__init__(entry, subentry)
+        self._attr_device_info["model"] = subentry.data.get(
+            CONF_IMAGE_MODEL, RECOMMENDED_IMAGE_MODEL
+        )
+
+    async def _async_generate_image(
+        self,
+        task: ai_task.GenImageTask,
+        chat_log: conversation.ChatLog,
+    ) -> ai_task.GenImageTaskResult:
+        """Handle a generate-image task."""
+        options = self.subentry.data
+        model = options.get(CONF_IMAGE_MODEL, RECOMMENDED_IMAGE_MODEL)
+        size = options.get(CONF_IMAGE_SIZE, RECOMMENDED_IMAGE_SIZE)
+        image_bytes = await async_request_image(
+            self.entry,
+            task.instructions,
+            size,
+            model,
+            options.get(CONF_IMAGE_QUALITY, RECOMMENDED_IMAGE_QUALITY),
+        )
+        width, height = (int(part) for part in size.split("x"))
+        return ai_task.GenImageTaskResult(
+            image_data=image_bytes,
+            conversation_id=chat_log.conversation_id,
+            mime_type="image/png",
+            width=width,
+            height=height,
+            model=model,
         )
 
 

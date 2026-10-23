@@ -40,6 +40,9 @@ from .client import create_client, endpoint_host
 from .const import (
     CONF_CHAT_MODEL,
     CONF_ENDPOINT,
+    CONF_IMAGE_MODEL,
+    CONF_IMAGE_QUALITY,
+    CONF_IMAGE_SIZE,
     CONF_MAX_TOKENS,
     CONF_REASONING_EFFORT,
     CONF_RECOMMENDED,
@@ -63,6 +66,7 @@ from .const import (
     CONF_VERBOSITY,
     DEFAULT_AI_TASK_NAME,
     DEFAULT_CONVERSATION_NAME,
+    DEFAULT_IMAGE_NAME,
     DEFAULT_STT_FORMAT,
     DEFAULT_STT_LANGUAGE,
     DEFAULT_STT_NAME,
@@ -72,10 +76,16 @@ from .const import (
     DEFAULT_TTS_STREAMING,
     DEFAULT_TTS_VOICE,
     DOMAIN,
+    IMAGE_QUALITIES,
+    IMAGE_SIZES,
     LOGGER,
     RECOMMENDED_AI_TASK_OPTIONS,
     RECOMMENDED_CHAT_MODEL,
     RECOMMENDED_CONVERSATION_OPTIONS,
+    RECOMMENDED_IMAGE_MODEL,
+    RECOMMENDED_IMAGE_OPTIONS,
+    RECOMMENDED_IMAGE_QUALITY,
+    RECOMMENDED_IMAGE_SIZE,
     RECOMMENDED_MAX_TOKENS,
     RECOMMENDED_REASONING_EFFORT,
     RECOMMENDED_STT_OPTIONS,
@@ -83,6 +93,7 @@ from .const import (
     RECOMMENDED_VERBOSITY,
     STT_FORMATS,
     STT_PROFANITY_OPTIONS,
+    SUBENTRY_IMAGE,
     TTS_OUTPUT_FORMATS,
     VERBOSITY_OPTIONS,
     reasoning_effort_options,
@@ -260,6 +271,7 @@ class AzureFoundryConfigFlow(ConfigFlow, domain=DOMAIN):
         return {
             "conversation": LLMSubentryFlowHandler,
             "ai_task_data": LLMSubentryFlowHandler,
+            SUBENTRY_IMAGE: ImageSubentryFlowHandler,
             "stt": STTSubentryFlowHandler,
             "tts": TTSSubentryFlowHandler,
         }
@@ -493,6 +505,89 @@ class STTSubentryFlowHandler(ConfigSubentryFlow):
             _update_speech_options(
                 options, user_input, CONF_STT_ENDPOINT, CONF_STT_API_KEY
             )
+            name = options.pop(CONF_NAME, None)
+            if self._is_new:
+                return self.async_create_entry(title=name or "", data=options)
+            return self.async_update_and_abort(
+                self._get_entry(),
+                self._get_reconfigure_subentry(),
+                data=options,
+            )
+
+        return self.async_show_form(
+            step_id="init",
+            data_schema=self.add_suggested_values_to_schema(
+                vol.Schema(schema), options
+            ),
+        )
+
+
+class ImageSubentryFlowHandler(ConfigSubentryFlow):
+    """Flow for image generation subentries."""
+
+    options: dict[str, Any]
+
+    @property
+    def _is_new(self) -> bool:
+        return self.source == "user"
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Add a new image generation subentry."""
+        self.options = dict(RECOMMENDED_IMAGE_OPTIONS)
+        return await self.async_step_init()
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Reconfigure an existing image generation subentry."""
+        self.options = dict(self._get_reconfigure_subentry().data)
+        return await self.async_step_init()
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> SubentryFlowResult:
+        """Collect image generation options."""
+        if self._get_entry().state is not ConfigEntryState.LOADED:
+            return self.async_abort(reason="entry_not_loaded")
+
+        options = self.options
+        schema: dict[Any, Any] = {}
+        if self._is_new:
+            schema[vol.Required(CONF_NAME, default=DEFAULT_IMAGE_NAME)] = str
+        schema[
+            vol.Required(
+                CONF_IMAGE_MODEL,
+                default=options.get(CONF_IMAGE_MODEL, RECOMMENDED_IMAGE_MODEL),
+            )
+        ] = str
+        schema[
+            vol.Required(
+                CONF_IMAGE_SIZE,
+                default=options.get(CONF_IMAGE_SIZE, RECOMMENDED_IMAGE_SIZE),
+            )
+        ] = SelectSelector(
+            SelectSelectorConfig(
+                options=IMAGE_SIZES,
+                mode=SelectSelectorMode.DROPDOWN,
+            )
+        )
+        schema[
+            vol.Required(
+                CONF_IMAGE_QUALITY,
+                default=options.get(CONF_IMAGE_QUALITY, RECOMMENDED_IMAGE_QUALITY),
+            )
+        ] = SelectSelector(
+            SelectSelectorConfig(
+                options=IMAGE_QUALITIES,
+                translation_key=CONF_IMAGE_QUALITY,
+                mode=SelectSelectorMode.DROPDOWN,
+            )
+        )
+
+        if user_input is not None:
+            options.update(user_input)
             name = options.pop(CONF_NAME, None)
             if self._is_new:
                 return self.async_create_entry(title=name or "", data=options)

@@ -13,6 +13,7 @@ LOGGER: logging.Logger = logging.getLogger(__package__)
 # Default entity/subentry names.
 DEFAULT_CONVERSATION_NAME = "Azure Foundry Conversation"
 DEFAULT_AI_TASK_NAME = "Azure Foundry AI Task"
+DEFAULT_IMAGE_NAME = "Azure Foundry Image Generation"
 DEFAULT_STT_NAME = "Azure Speech STT"
 DEFAULT_TTS_NAME = "Azure Speech TTS"
 
@@ -25,6 +26,17 @@ CONF_MAX_TOKENS = "max_tokens"
 CONF_REASONING_EFFORT = "reasoning_effort"
 CONF_RECOMMENDED = "recommended"
 CONF_VERBOSITY = "verbosity"
+
+# Image generation (subentry) option keys.
+CONF_IMAGE_MODEL = "image_model"
+CONF_IMAGE_SIZE = "image_size"
+CONF_IMAGE_QUALITY = "image_quality"
+SUBENTRY_IMAGE = "image_generation"
+RECOMMENDED_IMAGE_MODEL = "gpt-image-1"
+RECOMMENDED_IMAGE_SIZE = "1024x1024"
+RECOMMENDED_IMAGE_QUALITY = "high"
+IMAGE_SIZES: list[str] = ["1024x1024", "1536x1024", "1024x1536"]
+IMAGE_QUALITIES: list[str] = ["low", "medium", "high"]
 
 # Speech-to-text (subentry) option keys.
 CONF_STT_ENDPOINT = "stt_endpoint"
@@ -140,6 +152,11 @@ RECOMMENDED_CONVERSATION_OPTIONS = {
 RECOMMENDED_AI_TASK_OPTIONS = {
     CONF_RECOMMENDED: True,
     CONF_CHAT_MODEL: RECOMMENDED_CHAT_MODEL,
+}
+RECOMMENDED_IMAGE_OPTIONS = {
+    CONF_IMAGE_MODEL: RECOMMENDED_IMAGE_MODEL,
+    CONF_IMAGE_SIZE: RECOMMENDED_IMAGE_SIZE,
+    CONF_IMAGE_QUALITY: RECOMMENDED_IMAGE_QUALITY,
 }
 RECOMMENDED_STT_OPTIONS = {
     CONF_STT_LANGUAGE: DEFAULT_STT_LANGUAGE,

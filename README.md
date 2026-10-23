@@ -162,6 +162,8 @@ several agents with different deployments or prompts.
 
 ### Image generation service
 
+You can also add an **Image generation** entry from the integration's ⋮ menu (**Add image generation**). It creates an AI Task entity with image generation support (use it with `ai_task.generate_image`), using the deployment name, size and quality you choose.
+
 The integration registers `azure_foundry_conversation.generate_image` as a Home Assistant service. It supports service responses, so use `return_response: true` from a script or automation that calls the service. Required input is `prompt`; optional inputs are `size` and `config_entry_id`. The supported sizes are `1024x1024`, `1536x1024` (landscape), and `1024x1536` (portrait). The default size is `1024x1024` and quality is set to high.
 
 Example service call:

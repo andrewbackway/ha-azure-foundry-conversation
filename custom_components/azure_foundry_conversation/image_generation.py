@@ -15,7 +15,14 @@ from homeassistant.core import HomeAssistant, ServiceCall, SupportsResponse
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers import config_validation as cv
 
-from .const import DOMAIN, LOGGER
+from .const import (
+    DOMAIN,
+    IMAGE_SIZES,
+    LOGGER,
+    RECOMMENDED_IMAGE_MODEL,
+    RECOMMENDED_IMAGE_QUALITY,
+    RECOMMENDED_IMAGE_SIZE,
+)
 
 if TYPE_CHECKING:
     from . import AzureFoundryConfigEntry
@@ -24,9 +31,8 @@ SERVICE_GENERATE_IMAGE = "generate_image"
 CONF_PROMPT = "prompt"
 CONF_SIZE = "size"
 CONF_CONFIG_ENTRY_ID = "config_entry_id"
-IMAGE_MODEL = "gpt-image-1"
-DEFAULT_IMAGE_SIZE = "1024x1024"
-IMAGE_SIZES = ("1024x1024", "1536x1024", "1024x1536")
+IMAGE_MODEL = RECOMMENDED_IMAGE_MODEL
+DEFAULT_IMAGE_SIZE = RECOMMENDED_IMAGE_SIZE
 IMAGE_DIRECTORY = "azure_foundry_images"
 
 
@@ -35,13 +41,14 @@ def _safe_filename() -> str:
     return f"{uuid4().hex}.png"
 
 
-async def async_generate_image(
-    hass: HomeAssistant,
+async def async_request_image(
     entry: AzureFoundryConfigEntry,
     prompt: str,
     size: str = DEFAULT_IMAGE_SIZE,
-) -> dict[str, str]:
-    """Generate an image, persist it under /config/www, and return its local URL."""
+    model: str = IMAGE_MODEL,
+    quality: str = RECOMMENDED_IMAGE_QUALITY,
+) -> bytes:
+    """Request a PNG image from Azure and return its bytes."""
     prompt = prompt.strip()
     if not prompt:
         raise HomeAssistantError("An image prompt is required")
@@ -54,11 +61,11 @@ async def async_generate_image(
 
     try:
         response = await entry.runtime_data.images.generate(
-            model=IMAGE_MODEL,
+            model=model,
             prompt=prompt,
             size=size,
             n=1,
-            quality="high",
+            quality=quality,
             output_format="png",
         )
     except openai.RateLimitError as err:
@@ -79,9 +86,20 @@ async def async_generate_image(
         raise HomeAssistantError("Azure returned no image data")
 
     try:
-        image_bytes = base64.b64decode(response.data[0].b64_json, validate=True)
+        return base64.b64decode(response.data[0].b64_json, validate=True)
     except (binascii.Error, ValueError) as err:
         raise HomeAssistantError("Azure returned invalid image data") from err
+
+
+async def async_generate_image(
+    hass: HomeAssistant,
+    entry: AzureFoundryConfigEntry,
+    prompt: str,
+    size: str = DEFAULT_IMAGE_SIZE,
+) -> dict[str, str]:
+    """Generate an image, persist it under /config/www, and return its local URL."""
+    prompt = prompt.strip()
+    image_bytes = await async_request_image(entry, prompt, size)
 
     filename = _safe_filename()
     image_dir = Path(hass.config.path("www")) / IMAGE_DIRECTORY
