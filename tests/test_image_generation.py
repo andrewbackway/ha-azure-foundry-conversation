@@ -52,6 +52,13 @@ def _entry_with_image_subentry(
     )
 
 
+def _mock_image_generation(entry: Any, response: Any) -> AsyncMock:
+    """Mock image generation on the optioned client used by the request."""
+    generate = AsyncMock(return_value=response)
+    entry.runtime_data.with_options.return_value.images.generate = generate
+    return generate
+
+
 def test_service_selects_connection_with_image_subentry() -> None:
     """The service prefers the connection that has image configuration."""
     first = SimpleNamespace(entry_id="first", subentries={})
@@ -82,10 +89,11 @@ async def test_generate_image_saves_png(
 ) -> None:
     """Image generation decodes Azure's base64 response and saves a local PNG."""
     png_bytes = b"fake-png-data"
-    init_integration.runtime_data.images.generate = AsyncMock(
-        return_value=SimpleNamespace(
+    generate = _mock_image_generation(
+        init_integration,
+        SimpleNamespace(
             data=[SimpleNamespace(b64_json=base64.b64encode(png_bytes).decode("ascii"))]
-        )
+        ),
     )
 
     result = await async_generate_image(
@@ -96,7 +104,7 @@ async def test_generate_image_saves_png(
     assert result["prompt"] == "A red house"
     assert result["image_url"].startswith("/local/azure_foundry_images/")
     assert Path(result["path"]).read_bytes() == png_bytes
-    init_integration.runtime_data.images.generate.assert_awaited_once_with(
+    generate.assert_awaited_once_with(
         model=IMAGE_MODEL,
         prompt="A red house",
         size=DEFAULT_IMAGE_SIZE,
@@ -110,10 +118,12 @@ async def test_generate_image_rejects_empty_prompt(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """An empty prompt is rejected before calling Azure."""
+    generate = init_integration.runtime_data.with_options.return_value.images.generate
+
     with pytest.raises(HomeAssistantError, match="prompt is required"):
         await async_generate_image(hass, init_integration, "   ")
 
-    init_integration.runtime_data.images.generate.assert_not_called()
+    generate.assert_not_called()
 
 
 async def test_generate_image_uses_configured_image_subentry(
@@ -128,17 +138,18 @@ async def test_generate_image_uses_configured_image_subentry(
             CONF_IMAGE_QUALITY: "medium",
         },
     )
-    entry.runtime_data.images.generate = AsyncMock(
-        return_value=SimpleNamespace(
+    generate = _mock_image_generation(
+        entry,
+        SimpleNamespace(
             data=[SimpleNamespace(b64_json=base64.b64encode(b"png").decode("ascii"))]
-        )
+        ),
     )
 
     result = await async_generate_image(hass, entry, "A red house")
 
     assert result["model"] == "my-image-deployment"
     assert result["size"] == "1536x1024"
-    entry.runtime_data.images.generate.assert_awaited_once_with(
+    generate.assert_awaited_once_with(
         model="my-image-deployment",
         prompt="A red house",
         size="1536x1024",
@@ -160,15 +171,16 @@ async def test_generate_image_uses_custom_dimensions(
             CONF_IMAGE_HEIGHT: 864,
         },
     )
-    entry.runtime_data.images.generate = AsyncMock(
-        return_value=SimpleNamespace(
+    generate = _mock_image_generation(
+        entry,
+        SimpleNamespace(
             data=[SimpleNamespace(b64_json=base64.b64encode(b"png").decode("ascii"))]
-        )
+        ),
     )
     result = await async_generate_image(hass, entry, "A red house")
 
     assert result["size"] == "1536x864"
-    entry.runtime_data.images.generate.assert_awaited_once_with(
+    generate.assert_awaited_once_with(
         model=IMAGE_MODEL,
         prompt="A red house",
         size="1536x864",
@@ -190,8 +202,9 @@ async def test_generate_image_rejects_invalid_base64(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Invalid image data is reported as a Home Assistant error."""
-    init_integration.runtime_data.images.generate = AsyncMock(
-        return_value=SimpleNamespace(data=[SimpleNamespace(b64_json="not base64!")])
+    _mock_image_generation(
+        init_integration,
+        SimpleNamespace(data=[SimpleNamespace(b64_json="not base64!")]),
     )
 
     with pytest.raises(HomeAssistantError, match="invalid image data"):
@@ -202,14 +215,15 @@ async def test_generate_image_service_returns_image(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """The service generates an image and returns its local URL."""
-    init_integration.runtime_data.images.generate = AsyncMock(
-        return_value=SimpleNamespace(
+    _mock_image_generation(
+        init_integration,
+        SimpleNamespace(
             data=[
                 SimpleNamespace(
                     b64_json=base64.b64encode(b"fake-png-data").decode("ascii")
                 )
             ]
-        )
+        ),
     )
 
     result = await hass.services.async_call(
