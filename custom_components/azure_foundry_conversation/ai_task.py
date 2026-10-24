@@ -11,6 +11,8 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import AzureFoundryConfigEntry
 from .const import (
+    CONF_IMAGE_BACKGROUND,
+    CONF_IMAGE_INPUT_FIDELITY,
     CONF_IMAGE_MODEL,
     CONF_IMAGE_QUALITY,
     LOGGER,
@@ -19,7 +21,12 @@ from .const import (
     SUBENTRY_IMAGE,
 )
 from .entity import AzureFoundryBaseLLMEntity
-from .image_generation import async_request_image, configured_image_size
+from .image_generation import (
+    async_request_image,
+    async_request_image_edit,
+    configured_image_size,
+)
+from .image_sources import MAX_IMAGE_BYTES, MAX_IMAGE_COUNT, async_resolve_attachment
 
 
 async def async_setup_entry(
@@ -46,7 +53,10 @@ class AzureFoundryImageEntity(
 ):
     """Azure AI Foundry image generation entity."""
 
-    _attr_supported_features = ai_task.AITaskEntityFeature.GENERATE_IMAGE
+    _attr_supported_features = (
+        ai_task.AITaskEntityFeature.GENERATE_IMAGE
+        | ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS
+    )
 
     def __init__(self, entry: AzureFoundryConfigEntry, subentry) -> None:
         """Initialize the entity."""
@@ -64,13 +74,42 @@ class AzureFoundryImageEntity(
         options = self.subentry.data
         model = options.get(CONF_IMAGE_MODEL, RECOMMENDED_IMAGE_MODEL)
         size = configured_image_size(options)
-        image_bytes = await async_request_image(
-            self.entry,
-            task.instructions,
-            size,
-            model,
-            options.get(CONF_IMAGE_QUALITY, RECOMMENDED_IMAGE_QUALITY),
-        )
+        quality = options.get(CONF_IMAGE_QUALITY, RECOMMENDED_IMAGE_QUALITY)
+        if task.attachments:
+            if len(task.attachments) > MAX_IMAGE_COUNT:
+                raise HomeAssistantError(
+                    f"No more than {MAX_IMAGE_COUNT} images are supported"
+                )
+            images = []
+            input_bytes = 0
+            for attachment in task.attachments:
+                image = await async_resolve_attachment(self.hass, attachment)
+                input_bytes += len(image.data)
+                if input_bytes > MAX_IMAGE_BYTES:
+                    raise HomeAssistantError(
+                        "Combined source images must be 50 MB or smaller"
+                    )
+                images.append(image)
+            image_bytes = await async_request_image_edit(
+                self.hass,
+                self.entry,
+                task.instructions,
+                images,
+                None,
+                size,
+                model,
+                quality,
+                options.get(CONF_IMAGE_INPUT_FIDELITY),
+                options.get(CONF_IMAGE_BACKGROUND),
+            )
+        else:
+            image_bytes = await async_request_image(
+                self.entry,
+                task.instructions,
+                size,
+                model,
+                quality,
+            )
         width, height = (int(part) for part in size.split("x"))
         return ai_task.GenImageTaskResult(
             image_data=image_bytes,

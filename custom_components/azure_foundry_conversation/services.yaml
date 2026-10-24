@@ -35,3 +35,93 @@ generate_image:
       required: false
       selector:
         text:
+edit_image:
+  name: Edit image
+  description: Edit one or more images using the deployment configured in an Image generation entry and save the PNG result in Home Assistant's local www directory.
+  fields:
+    prompt:
+      name: Prompt
+      description: Describe how to edit the source image or images.
+      required: true
+      example: Replace the cloudy sky with a clear sunset while preserving the house
+      selector:
+        text:
+          multiline: true
+    images:
+      name: Source images
+      description: List of local paths, media-source URIs, or camera/image entity IDs (up to 16 images).
+      required: true
+      selector:
+        object:
+    mask:
+      name: Mask image
+      description: Optional PNG mask. Transparent areas indicate where the model may edit.
+      required: false
+      selector:
+        text:
+    size:
+      name: Image size
+      description: Override the size configured in the Image generation entry.
+      required: false
+      selector:
+        select:
+          options:
+            - label: Square (1024 × 1024)
+              value: 1024x1024
+            - label: Landscape (1536 × 1024)
+              value: 1536x1024
+            - label: Portrait (1024 × 1536)
+              value: 1024x1536
+            - label: Automatic
+              value: auto
+    quality:
+      name: Image quality
+      description: Override the quality configured in the Image generation entry.
+      required: false
+      selector:
+        select:
+          options:
+            - label: Low
+              value: low
+            - label: Medium
+              value: medium
+            - label: High
+              value: high
+            - label: Automatic
+              value: auto
+    input_fidelity:
+      name: Input fidelity
+      description: Preserve more details from the source image when set to high.
+      required: false
+      selector:
+        select:
+          options:
+            - label: Low
+              value: low
+            - label: High
+              value: high
+    background:
+      name: Background
+      description: Set the generated image background.
+      required: false
+      selector:
+        select:
+          options:
+            - label: Automatic
+              value: auto
+            - label: Opaque
+              value: opaque
+            - label: Transparent
+              value: transparent
+    config_entry_id:
+      name: Azure AI Foundry connection ID
+      description: Optional config entry ID to select a specific connection when multiple are configured.
+      required: false
+      selector:
+        text:
+    image_subentry_id:
+      name: Image generation entry ID
+      description: Optional subentry ID when multiple image generation entries are configured.
+      required: false
+      selector:
+        text:

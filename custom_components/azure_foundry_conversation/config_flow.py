@@ -40,7 +40,9 @@ from .client import create_client, endpoint_host
 from .const import (
     CONF_CHAT_MODEL,
     CONF_ENDPOINT,
+    CONF_IMAGE_BACKGROUND,
     CONF_IMAGE_HEIGHT,
+    CONF_IMAGE_INPUT_FIDELITY,
     CONF_IMAGE_MODEL,
     CONF_IMAGE_QUALITY,
     CONF_IMAGE_SIZE,
@@ -79,6 +81,8 @@ from .const import (
     DEFAULT_TTS_STREAMING,
     DEFAULT_TTS_VOICE,
     DOMAIN,
+    IMAGE_BACKGROUNDS,
+    IMAGE_INPUT_FIDELITIES,
     IMAGE_QUALITIES,
     IMAGE_SIZE_OPTIONS,
     LOGGER,
@@ -590,6 +594,20 @@ class ImageSubentryFlowHandler(ConfigSubentryFlow):
                 mode=SelectSelectorMode.DROPDOWN,
             )
         )
+        schema[vol.Optional(CONF_IMAGE_INPUT_FIDELITY)] = SelectSelector(
+            SelectSelectorConfig(
+                options=IMAGE_INPUT_FIDELITIES,
+                translation_key=CONF_IMAGE_INPUT_FIDELITY,
+                mode=SelectSelectorMode.DROPDOWN,
+            )
+        )
+        schema[vol.Optional(CONF_IMAGE_BACKGROUND)] = SelectSelector(
+            SelectSelectorConfig(
+                options=IMAGE_BACKGROUNDS,
+                translation_key=CONF_IMAGE_BACKGROUND,
+                mode=SelectSelectorMode.DROPDOWN,
+            )
+        )
         schema[
             vol.Optional(CONF_IMAGE_WIDTH, default=options.get(CONF_IMAGE_WIDTH, 1024))
         ] = vol.All(int, vol.Range(min=256, max=3840))
@@ -601,6 +619,9 @@ class ImageSubentryFlowHandler(ConfigSubentryFlow):
 
         if user_input is not None:
             options.update(user_input)
+            for key in (CONF_IMAGE_INPUT_FIDELITY, CONF_IMAGE_BACKGROUND):
+                if key not in user_input:
+                    options.pop(key, None)
             if options[CONF_IMAGE_SIZE] == CUSTOM_IMAGE_SIZE:
                 try:
                     validate_custom_image_dimensions(

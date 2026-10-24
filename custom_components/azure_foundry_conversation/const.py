@@ -33,14 +33,20 @@ CONF_IMAGE_SIZE = "image_size"
 CONF_IMAGE_WIDTH = "image_width"
 CONF_IMAGE_HEIGHT = "image_height"
 CONF_IMAGE_QUALITY = "image_quality"
+CONF_IMAGE_INPUT_FIDELITY = "image_input_fidelity"
+CONF_IMAGE_BACKGROUND = "image_background"
 SUBENTRY_IMAGE = "image_generation"
 CUSTOM_IMAGE_SIZE = "custom"
 RECOMMENDED_IMAGE_MODEL = "gpt-image-1"
 RECOMMENDED_IMAGE_SIZE = "1024x1024"
 RECOMMENDED_IMAGE_QUALITY = "high"
+IMAGE_EDIT_API_VERSION = "2025-04-01-preview"
 IMAGE_SIZES: list[str] = ["1024x1024", "1536x1024", "1024x1536"]
 IMAGE_SIZE_OPTIONS: list[str] = [*IMAGE_SIZES, CUSTOM_IMAGE_SIZE]
 IMAGE_QUALITIES: list[str] = ["low", "medium", "high"]
+IMAGE_EDIT_QUALITIES: list[str] = [*IMAGE_QUALITIES, "auto"]
+IMAGE_INPUT_FIDELITIES: list[str] = ["low", "high"]
+IMAGE_BACKGROUNDS: list[str] = ["transparent", "opaque", "auto"]
 
 # Speech-to-text (subentry) option keys.
 CONF_STT_ENDPOINT = "stt_endpoint"

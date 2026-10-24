@@ -22,7 +22,7 @@ classic Chat Completions API rejects tools + reasoning for these models — see
 - **Conversation agent** — Responses API, tool calling (device control through
   HA Assist), streaming, and configurable reasoning effort.
 - **AI Task** — `ai_task.generate_data` with optional structured (JSON) output.
-- **Image generation** — create images with the Azure `gpt-image-1` deployment from conversation requests or the `azure_foundry_conversation.generate_image` service. Generated PNGs are saved locally under `/config/www/azure_foundry_images/` and exposed through Home Assistant's `/local/` URL.
+- **Image generation and editing** — generate images from conversation requests or `ai_task.generate_image`, and edit images through `azure_foundry_conversation.edit_image` or AI Task attachments. Generated PNGs are saved locally under `/config/www/azure_foundry_images/` and exposed through Home Assistant's `/local/` URL.
 - **Speech-to-Text** — Azure AI Speech short-audio recognition.
 - **Text-to-Speech** — Azure AI Speech neural voices via SSML, with low-latency
   streaming that plays audio as it is synthesized (sentence-by-sentence as the
@@ -164,7 +164,7 @@ several agents with different deployments or prompts.
 
 You can also add an **Image generation** entry from the integration's ⋮ menu (**Add image generation**). It creates an AI Task entity with image generation support (use it with `ai_task.generate_image`), using the deployment name, size and quality you choose. Choose **Custom** for the size and enter width and height in the fields on the same form. Those fields are used only for Custom. Custom dimensions must be multiples of 16, have an aspect ratio between 1:3 and 3:1, and contain 655,360–8,294,400 pixels (maximum edge 3,840 pixels).
 
-The integration registers `azure_foundry_conversation.generate_image` as a Home Assistant service. It supports service responses, so use `return_response: true` from a script or automation that calls the service. Required input is `prompt`; optional inputs are `size`, `config_entry_id` and `image_subentry_id`. The deployment name, default size and quality come from the Image generation entry. `size` overrides that entry's size. Supported sizes are `1024x1024`, `1536x1024` (landscape), and `1024x1536` (portrait).
+The integration registers `azure_foundry_conversation.generate_image` and `azure_foundry_conversation.edit_image` as Home Assistant services. They support service responses, so use `return_response: true` from a script or automation that calls them. The image deployment, default size and quality come from the Image generation entry. `size` overrides that entry's size. Supported preset sizes are `1024x1024`, `1536x1024` (landscape), and `1024x1536` (portrait).
 
 Example service call:
 
@@ -177,6 +177,29 @@ response_variable: generated_image
 ```
 
 The service response includes `image_url` (a Home Assistant `/local/...` URL), `path` (the saved file path), `prompt`, `model`, and `size`. When exactly one loaded connection has an Image generation entry, the service uses that connection automatically. If multiple connections have image entries, set `config_entry_id`; if that connection has multiple Image generation entries, also set `image_subentry_id`. If no image entry is configured and multiple connections are loaded, set `config_entry_id` to choose one. The generated image is stored in Home Assistant's `www` directory, so it persists across restarts. Make sure your Home Assistant backup and storage policies cover this directory.
+
+`edit_image` accepts a required `images` list of absolute paths in Home Assistant's
+allowed directories (or `/local/...` URLs), `media-source://` URIs that resolve to local media, or
+`camera.*` / `image.*` entity IDs. Up to 16 JPEG, PNG, or WebP inputs are accepted
+(maximum 50 MB combined). An optional PNG `mask` can restrict editing; its dimensions
+must match the input image. Optional `size`, `quality`, `input_fidelity`, and
+`background` override the image-entry defaults. `input_fidelity` and `background`
+can also be configured on the Image generation entry for AI Task edits.
+
+```yaml
+action: azure_foundry_conversation.edit_image
+data:
+  prompt: Replace the cloudy sky with a clear sunset while preserving the house
+  images:
+    - /config/www/source.png
+  input_fidelity: high
+response_variable: edited_image
+```
+
+`ai_task.generate_image` also edits when one or more attachments are supplied. Home
+Assistant resolves media-source attachments; without attachments, the existing
+generation behavior is unchanged. It uses the image-entry's configured
+`input_fidelity` and `background` values when present.
 
 ## Troubleshooting
 

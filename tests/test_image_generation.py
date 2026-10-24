@@ -6,7 +6,7 @@ import base64
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -26,10 +26,13 @@ from custom_components.azure_foundry_conversation.conversation import (
 from custom_components.azure_foundry_conversation.image_generation import (
     DEFAULT_IMAGE_SIZE,
     IMAGE_MODEL,
+    SERVICE_EDIT_IMAGE,
     SERVICE_GENERATE_IMAGE,
     _select_config_entry,
     async_generate_image,
+    async_request_image_edit,
 )
+from custom_components.azure_foundry_conversation.image_sources import ImageInput
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 
@@ -238,6 +241,128 @@ async def test_generate_image_service_returns_image(
     assert result["prompt"] == "A red house"
     assert result["image_url"].startswith("/local/azure_foundry_images/")
     assert Path(result["path"]).read_bytes() == b"fake-png-data"
+
+
+async def test_request_image_edit_passes_images_and_optional_parameters(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Image edits send the mask and selected options to the SDK."""
+    image_bytes = b"\x89PNG\r\n\x1a\nsource"
+    mask_bytes = b"\x89PNG\r\n\x1a\nmask"
+    edit = AsyncMock(
+        return_value=SimpleNamespace(
+            data=[
+                SimpleNamespace(
+                    b64_json=base64.b64encode(b"edited-png").decode("ascii")
+                )
+            ]
+        )
+    )
+    image_client = SimpleNamespace(images=SimpleNamespace(edit=edit))
+    with patch(
+        "custom_components.azure_foundry_conversation.image_generation.create_image_edit_client",
+        return_value=image_client,
+    ):
+        result = await async_request_image_edit(
+            hass,
+            init_integration,
+            "Replace the background",
+            [ImageInput(image_bytes, "image/png", ".png")],
+            ImageInput(mask_bytes, "image/png", ".png"),
+            DEFAULT_IMAGE_SIZE,
+            IMAGE_MODEL,
+            "high",
+            "high",
+            "transparent",
+        )
+
+    assert result == b"edited-png"
+    edit.assert_awaited_once_with(
+        model=IMAGE_MODEL,
+        prompt="Replace the background",
+        size=DEFAULT_IMAGE_SIZE,
+        output_format="png",
+        image=[("input0.png", image_bytes, "image/png")],
+        mask=("mask.png", mask_bytes, "image/png"),
+        quality="high",
+        n=1,
+        input_fidelity="high",
+        background="transparent",
+    )
+
+
+async def test_request_image_edit_omits_unset_options(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Unset edit options are left out of the API call."""
+    edit = AsyncMock(
+        return_value=SimpleNamespace(
+            data=[
+                SimpleNamespace(
+                    b64_json=base64.b64encode(b"edited-png").decode("ascii")
+                )
+            ]
+        )
+    )
+    image_client = SimpleNamespace(images=SimpleNamespace(edit=edit))
+    with patch(
+        "custom_components.azure_foundry_conversation.image_generation.create_image_edit_client",
+        return_value=image_client,
+    ):
+        await async_request_image_edit(
+            hass,
+            init_integration,
+            "Edit this image",
+            [ImageInput(b"\x89PNG\r\n\x1a\nsource", "image/png", ".png")],
+            None,
+            DEFAULT_IMAGE_SIZE,
+            IMAGE_MODEL,
+            "high",
+        )
+
+    assert "mask" not in edit.await_args.kwargs
+    assert "input_fidelity" not in edit.await_args.kwargs
+    assert "background" not in edit.await_args.kwargs
+
+
+async def test_edit_image_service_saves_image_and_returns_metadata(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """The edit service resolves a local source, saves the result, and responds."""
+    source_path = Path(hass.config.path("www")) / "source.png"
+    source_path.parent.mkdir(parents=True, exist_ok=True)
+    source_path.write_bytes(b"\x89PNG\r\n\x1a\nsource")
+    edit = AsyncMock(
+        return_value=SimpleNamespace(
+            data=[
+                SimpleNamespace(
+                    b64_json=base64.b64encode(b"edited-png").decode("ascii")
+                )
+            ]
+        )
+    )
+    image_client = SimpleNamespace(images=SimpleNamespace(edit=edit))
+    with patch(
+        "custom_components.azure_foundry_conversation.image_generation.create_image_edit_client",
+        return_value=image_client,
+    ):
+        result = await hass.services.async_call(
+            DOMAIN,
+            SERVICE_EDIT_IMAGE,
+            {
+                "prompt": "Replace the background",
+                "images": [str(source_path)],
+                "input_fidelity": "high",
+            },
+            blocking=True,
+            return_response=True,
+        )
+
+    assert result["model"] == IMAGE_MODEL
+    assert result["source_count"] == 1
+    assert result["image_url"].startswith("/local/azure_foundry_images/")
+    assert Path(result["path"]).read_bytes() == b"edited-png"
+    assert edit.await_args.kwargs["input_fidelity"] == "high"
 
 
 @pytest.mark.parametrize(

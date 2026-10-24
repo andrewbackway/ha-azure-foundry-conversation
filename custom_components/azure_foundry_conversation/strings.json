@@ -117,6 +117,8 @@
             "image_model": "Model (Azure deployment name)",
             "image_size": "Image size",
             "image_quality": "Image quality",
+            "image_input_fidelity": "Edit input fidelity",
+            "image_background": "Edit background",
             "image_width": "Custom width",
             "image_height": "Custom height"
           },
@@ -204,6 +206,19 @@
         "low": "Low",
         "medium": "Medium",
         "high": "High"
+      }
+    },
+    "image_input_fidelity": {
+      "options": {
+        "low": "Low",
+        "high": "High"
+      }
+    },
+    "image_background": {
+      "options": {
+        "transparent": "Transparent",
+        "opaque": "Opaque",
+        "auto": "Automatic"
       }
     },
     "image_size": {

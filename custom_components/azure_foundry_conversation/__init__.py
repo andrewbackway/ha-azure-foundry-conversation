@@ -13,7 +13,11 @@ from homeassistant.helpers.typing import ConfigType
 
 from .client import create_client, endpoint_host
 from .const import CONF_ENDPOINT, DOMAIN, LOGGER
-from .image_generation import SERVICE_GENERATE_IMAGE, async_setup_image_service
+from .image_generation import (
+    SERVICE_EDIT_IMAGE,
+    SERVICE_GENERATE_IMAGE,
+    async_setup_image_service,
+)
 
 PLATFORMS = (
     Platform.AI_TASK,
@@ -74,6 +78,7 @@ async def async_unload_entry(
         for other in hass.config_entries.async_entries(DOMAIN)
     ):
         hass.services.async_remove(DOMAIN, SERVICE_GENERATE_IMAGE)
+        hass.services.async_remove(DOMAIN, SERVICE_EDIT_IMAGE)
     return unloaded
 
 

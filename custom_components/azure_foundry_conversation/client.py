@@ -1,9 +1,10 @@
 """Client helpers for the Azure AI Foundry Conversation integration.
 
-This module centralizes two things:
+This module centralizes:
 
 - Building the OpenAI-compatible client pointed at the Azure AI Foundry
   ``/openai/v1/`` endpoint (used by the conversation and AI Task entities).
+- Building the versioned Azure client used by the deployment-scoped image edit API.
 - Small helpers for the Azure AI Speech REST endpoints (used by STT and TTS),
   including detecting the endpoint form and building the correct REST paths.
 """
@@ -17,6 +18,8 @@ import openai
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.httpx_client import get_async_client
+
+from .const import IMAGE_EDIT_API_VERSION
 
 # REST paths for the Azure AI Speech short-audio / synthesis endpoints.
 # Custom-subdomain hosts (``*.cognitiveservices.azure.com``) route via /stt and
@@ -49,6 +52,27 @@ def create_client(
         api_key=api_key,
         base_url=normalize_foundry_base_url(endpoint),
         http_client=get_async_client(hass),
+    )
+
+
+def create_image_edit_client(
+    hass: HomeAssistant,
+    api_key: str,
+    endpoint: str,
+    timeout: float,
+) -> openai.AsyncAzureOpenAI:
+    """Create an Azure deployment-scoped client for image edit requests."""
+    azure_endpoint = (endpoint or "").strip().rstrip("/")
+    if azure_endpoint.endswith("/openai/v1"):
+        azure_endpoint = azure_endpoint.removesuffix("/openai/v1")
+
+    return openai.AsyncAzureOpenAI(
+        api_key=api_key,
+        azure_endpoint=azure_endpoint,
+        api_version=IMAGE_EDIT_API_VERSION,
+        http_client=get_async_client(hass),
+        timeout=timeout,
+        max_retries=0,
     )
 
 
