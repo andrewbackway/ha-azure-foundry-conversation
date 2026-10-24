@@ -29,10 +29,7 @@ def test_image_task_entity_supports_attachments() -> None:
             data={},
         ),
     )
-    assert (
-        ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS
-        in entity.supported_features
-    )
+    assert ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS in entity.supported_features
 
 
 async def test_generate_image_edits_when_attachments_are_provided(
