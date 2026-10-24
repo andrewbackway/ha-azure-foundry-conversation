@@ -331,6 +331,7 @@ async def test_edit_image_service_saves_image_and_returns_metadata(
     """The edit service resolves a local source, saves the result, and responds."""
     source_path = Path(hass.config.path("www")) / "source.png"
     source_path.parent.mkdir(parents=True, exist_ok=True)
+    hass.config.allowlist_external_dirs.add(str(source_path.parent))
     source_path.write_bytes(b"\x89PNG\r\n\x1a\nsource")
     edit = AsyncMock(
         return_value=SimpleNamespace(

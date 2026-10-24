@@ -18,6 +18,7 @@ async def test_resolve_allowed_local_png(hass: HomeAssistant) -> None:
     """An allowed local PNG is loaded and normalized."""
     path = Path(hass.config.path("www")) / "source.png"
     path.parent.mkdir(parents=True, exist_ok=True)
+    hass.config.allowlist_external_dirs.add(str(path.parent))
     path.write_bytes(b"\x89PNG\r\n\x1a\nsource")
 
     resolved = await async_resolve_image(hass, str(path))

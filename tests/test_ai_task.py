@@ -21,10 +21,15 @@ from .conftest import FakeStream
 
 def test_image_task_entity_supports_attachments() -> None:
     """Image Task entity declares its support for edit attachments."""
-    assert (
-        ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS
-        in AzureFoundryImageEntity._attr_supported_features
+    entity = AzureFoundryImageEntity(
+        SimpleNamespace(),
+        SimpleNamespace(
+            subentry_id="image-entry",
+            title="Image generation",
+            data={},
+        ),
     )
+    assert ai_task.AITaskEntityFeature.SUPPORT_ATTACHMENTS in entity.supported_features
 
 
 async def test_generate_image_edits_when_attachments_are_provided(
